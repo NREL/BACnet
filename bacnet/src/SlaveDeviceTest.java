@@ -57,9 +57,9 @@ public class SlaveDeviceTest {
 		
 	}
     public static void main(String[] args) throws Exception {
-    	LocalDevice localDevice = new LocalDevice(1968, "169.254.112.245");
-        //LocalDevice localDevice = new LocalDevice(1968, "192.168.2.53");
-        localDevice.setExceptionListener(new MyExceptionListener());
+//    	LocalDevice localDevice = new LocalDevice(1968, "169.254.112.245");
+        LocalDevice localDevice = new LocalDevice(1968, "192.168.2.53");
+//        localDevice.setExceptionListener(new MyExceptionListener());
         localDevice.getConfiguration().setProperty(PropertyIdentifier.objectName,
                 new CharacterString("BACnet4J slave device test"));
         localDevice.getConfiguration().setProperty(PropertyIdentifier.vendorIdentifier,
