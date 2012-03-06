@@ -25,11 +25,33 @@ package gov.nrel.bacnet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.HashSet;
 import java.util.logging.*;
+import java.util.ArrayList;   
+import java.util.Iterator;   
+  
+import com.serotonin.bacnet4j.LocalDevice;   
+import com.serotonin.bacnet4j.RemoteDevice;   
+import com.serotonin.bacnet4j.base.BACnetUtils;   
+import com.serotonin.bacnet4j.event.DefaultDeviceEventListener;   
+import com.serotonin.bacnet4j.service.acknowledgement.ReadRangeAck;   
+import com.serotonin.bacnet4j.service.confirmed.ReadRangeRequest;   
+import com.serotonin.bacnet4j.service.confirmed.ReadRangeRequest.BySequenceNumber;   
+import com.serotonin.bacnet4j.type.Encodable;   
+import com.serotonin.bacnet4j.type.constructed.Address;   
+import com.serotonin.bacnet4j.type.constructed.LogRecord;   
+import com.serotonin.bacnet4j.type.enumerated.ObjectType;   
+import com.serotonin.bacnet4j.type.enumerated.PropertyIdentifier;   
+import com.serotonin.bacnet4j.type.primitive.ObjectIdentifier;   
+import com.serotonin.bacnet4j.type.primitive.SignedInteger;   
+import com.serotonin.bacnet4j.type.primitive.UnsignedInteger;   
+import com.serotonin.bacnet4j.util.PropertyReferences;   
+import com.serotonin.bacnet4j.util.PropertyValues;   
+
 import com.serotonin.bacnet4j.service.confirmed.ReinitializeDeviceRequest.ReinitializedStateOfDevice;
 import com.serotonin.bacnet4j.LocalDevice;
 import com.serotonin.bacnet4j.RemoteDevice;
@@ -62,13 +84,15 @@ import com.serotonin.bacnet4j.type.primitive.Boolean;
 import com.serotonin.bacnet4j.type.primitive.CharacterString;
 import com.serotonin.bacnet4j.type.primitive.ObjectIdentifier;
 import com.serotonin.bacnet4j.type.primitive.UnsignedInteger;
+import com.serotonin.bacnet4j.type.primitive.SignedInteger;
 import com.serotonin.bacnet4j.type.primitive.Unsigned16;
 import com.serotonin.bacnet4j.util.PropertyReferences;
 import com.serotonin.bacnet4j.util.PropertyValues;
+import com.serotonin.bacnet4j.type.enumerated.ObjectType;   
 
 
 public class Scan {
-  class MyExceptionListener extends DefaultExceptionListener {  
+  static class MyExceptionListener extends DefaultExceptionListener {  
     @Override  
       public void unimplementedVendorService(UnsignedInteger vendorId, UnsignedInteger serviceNumber, 
           ByteQueue queue) 
@@ -82,20 +106,29 @@ public class Scan {
   }  
 
   static class Handler extends DefaultDeviceEventListener {
-    private BlockingQueue<RemoteDevice> devices = new LinkedBlockingQueue<RemoteDevice>();
-    private HashSet<RemoteDevice> founddevices = new HashSet<RemoteDevice>();
+    private BlockingQueue<RemoteDevice> m_devices;
+    private HashSet<RemoteDevice> m_founddevices;
+    private Logger m_logger;
+    
+    public Handler()
+    {
+      m_devices = new LinkedBlockingQueue<RemoteDevice>();
+      m_founddevices = new HashSet<RemoteDevice>();
+      m_logger = Logger.getLogger("Handler");
+      m_logger.setParent(Logger.getLogger("BACnetScanner"));
+    }
 
     @Override
       public void iAmReceived(RemoteDevice d) {
-        System.out.println("RemoteDevice found: " + d);
+        m_logger.info("RemoteDevice found: " + d);
 
         try {
-          if (!founddevices.contains(d))
+          if (!m_founddevices.contains(d))
           {
-            founddevices.add(d);
-            devices.put(d);
+            m_founddevices.add(d);
+            m_devices.put(d);
           } else {
-            System.out.println("Device already queued for scanning: " + d);
+            m_logger.info("Device already queued for scanning: " + d);
           }
         } catch (java.lang.InterruptedException e) {
         }
@@ -103,71 +136,136 @@ public class Scan {
 
     public BlockingQueue<RemoteDevice> remoteDevices()
     {
-      return devices;
+      return m_devices;
     }
   }
 
 
-  private Logger logger;
+  private Logger m_logger;
 
   public static void main(String[] args) throws Exception {
     Scan s = new Scan();
     s.run();
   }
 
-  private void printObject(ObjectIdentifier parentoid, ObjectIdentifier oid, PropertyValues pvs,
-      java.io.PrintWriter writer) {
+  static class OID
+  {
+    OID(ObjectIdentifier t_oid, String t_objectName, String t_presentValue, String t_units)
+    {
+      oid = t_oid;
+      objectName = t_objectName;
+      presentValue = t_presentValue;
+      units = t_units;
+    
+      children = new Vector<OID>();  
+    }
+
+    ObjectIdentifier oid;
+    String objectName;
+    String presentValue;
+    String units;
+
+    Vector<OID> children;
+  }
+
+  private void printObject(OID t_parent, OID t_oid,
+      java.io.PrintWriter writer)
+  {
+    writer.println(String.format("%s, %s, %s, %s, %s, %s, %s", 
+          t_parent.oid,
+          t_parent.objectName,
+          t_oid.oid.getObjectType(),
+          t_oid.oid.getInstanceNumber(),
+          t_oid.objectName,
+          t_oid.presentValue,
+          t_oid.units));
+
+    for (OID child : t_oid.children)
+    {
+      printObject(t_oid, child, writer);
+    }
+
+
+  }
+
+  private OID buildObject(LocalDevice ld, RemoteDevice rd, ObjectIdentifier oid, PropertyValues pvs) throws Exception
+  {
+    Encodable objectName = pvs.get(oid, PropertyIdentifier.objectName);
+
+    Encodable presentValue = null;
+    Encodable units = null;
 
     try {
-      Encodable parentObjectName = pvs.get(parentoid, PropertyIdentifier.objectName);
-      Encodable objectName = pvs.get(oid, PropertyIdentifier.objectName);
-
-      Encodable presentValue = null;
-      Encodable units = null;
-
-      try {
-        presentValue = pvs.get(oid, PropertyIdentifier.presentValue);
-        units = pvs.get(oid, PropertyIdentifier.units);
-      } catch (Exception e) {
-      }
-
-
-      writer.println(String.format("%s, %s, %s, %s, %s, %s, %s", 
-            parentoid,
-            parentObjectName,
-            oid.getObjectType(),
-            oid.getInstanceNumber(),
-            objectName,
-            presentValue,
-            units));
+      presentValue = pvs.get(oid, PropertyIdentifier.presentValue);
+      units = pvs.get(oid, PropertyIdentifier.units);
     } catch (Exception e) {
+      m_logger.log(Level.FINEST, "Exception getting propertyvalue", e);
+    }
+
+    // if this object is a trend log, then let's get the trend log data
+    // adapted from: http://mango.serotoninsoftware.com/forum/posts/list/666.page
+    if (oid.getObjectType() == ObjectType.trendLog)
+    {
+      try {
+        UnsignedInteger totalRecordCount = (UnsignedInteger) pvs.get(oid, PropertyIdentifier.totalRecordCount);   
+        UnsignedInteger ui = (UnsignedInteger) pvs.get(oid, PropertyIdentifier.recordCount);  
+        SignedInteger count = new SignedInteger(ui.bigIntegerValue());
+
+        UnsignedInteger referenceIndex = new UnsignedInteger(totalRecordCount.longValue() - count.longValue() - 1);   
+        ReadRangeRequest rrr = new ReadRangeRequest(oid, PropertyIdentifier.logBuffer, null, 
+            new BySequenceNumber(referenceIndex, count));   
+        ReadRangeAck rra = (ReadRangeAck)ld.send(rd, rrr);   
+        m_logger.fine("trendLog itemCount: " + rra.getItemCount());
+        m_logger.fine("trendLog firstSequenceNumber: " + rra.getFirstSequenceNumber());
+        m_logger.fine("trendLog itemData: " + rra.getItemData());
+        Iterator<?> it = (Iterator<?>)rra.getItemData().iterator();   
+        while (it.hasNext())   
+        {   
+          Encodable e = (Encodable)it.next();   
+          if (e instanceof LogRecord)   
+          {   
+            LogRecord lr = (LogRecord)e;   
+//            m_logger.fine("trendLogRecord Value: " + lr.getEncodable());
+            m_logger.fine("trendLogRecord ChoiceType: " + lr.getChoiceType());
+          }   
+        }   
+      } catch (Exception e) {
+        m_logger.log(Level.SEVERE, "Error with reading trend log from device", e);
+      }
     }
 
 
-    System.out.println(String.format("\t%s", oid));
     for (ObjectPropertyReference opr : pvs) {
       if (oid.equals(opr.getObjectIdentifier())) {
-        System.out.println(String.format("\t\t%s = %s", opr.getPropertyIdentifier().toString(), 
-            pvs.getNoErrorCheck(opr)));
+        m_logger.finer(String.format("OID: %s: %s = %s", 
+              oid,
+              opr.getPropertyIdentifier().toString(), 
+              pvs.getNoErrorCheck(opr)));
       }
-
     }
+
+    OID newoid = new OID(oid, 
+        (objectName == null?null:objectName.toString()), 
+        (presentValue == null?null:presentValue.toString()), 
+        (units == null?null:units.toString())
+       );
+    return newoid;
   }
 
 
   private void run() {
-    logger = Logger.getLogger("BACnetScanner");
+    m_logger = Logger.getLogger("BACnetScanner");
 
     try {
       FileHandler fh = new FileHandler("LogFile.log", true);
-      logger.addHandler(fh);
+      m_logger.addHandler(fh);
       SimpleFormatter formatter = new SimpleFormatter();
       fh.setFormatter(formatter);
     } catch (Exception e) {
-      logger.log(Level.SEVERE, "Unable to create log file", e);
+      m_logger.log(Level.SEVERE, "Unable to create log file", e);
     }
 
-    logger.setLevel(Level.ALL);
+    m_logger.setLevel(Level.ALL);
 
     LocalDevice localDevice = new LocalDevice(1234, "192.168.2.255");
     localDevice.setPort(LocalDevice.DEFAULT_PORT);
@@ -195,19 +293,19 @@ public class Scan {
     while (true) {
       String ipstr = IpAddressUtils.toIpString(ip);
       localDevice.setBroadcastAddress(ipstr);
-      logger.fine("Scanning IP: " + ipstr);
+      m_logger.fine("Scanning IP: " + ipstr);
       try {
         localDevice.sendBroadcast(whois);
       }
       catch (BACnetException e) {
-        logger.log(Level.WARNING, "Exception occured with ip " + ipstr, e);
+        m_logger.log(Level.WARNING, "Exception occured with ip " + ipstr, e);
       }
 
       try {
         increment(ip);
       }
       catch (Exception e) {
-        logger.info("Done pinging devices");
+        m_logger.info("Done pinging devices");
         break;
       }
     }
@@ -220,7 +318,7 @@ public class Scan {
     try {
       file = new java.io.FileOutputStream("output.csv");
     } catch (Exception e) {
-      logger.log(Level.SEVERE, "Error opening output file", e);
+      m_logger.log(Level.SEVERE, "Error opening output file", e);
     }
 
     if (file != null)
@@ -238,14 +336,14 @@ public class Scan {
         {
           break;
         }
-        logger.info("Getting device info: " + rd);
+        m_logger.info("Getting device info: " + rd);
         localDevice.getExtendedDeviceInformation(rd);
 
         @SuppressWarnings("unchecked")
         List<ObjectIdentifier> oids = ((SequenceOf<ObjectIdentifier>) localDevice.sendReadPropertyAllowNull(rd, rd.getObjectIdentifier(), PropertyIdentifier.objectList)).getValues();
 
-        logger.info("Getting device info: " + rd);
-        logger.fine("Oids found: " + Integer.toString(oids.size()));
+        m_logger.info("Getting device info: " + rd);
+        m_logger.fine("Oids found: " + Integer.toString(oids.size()));
         PropertyReferences refs = new PropertyReferences();
         // add the property references of the "device object" to the list
         refs.add(rd.getObjectIdentifier(), PropertyIdentifier.objectName);
@@ -255,23 +353,24 @@ public class Scan {
           refs.add(oid, PropertyIdentifier.objectName);
           refs.add(oid, PropertyIdentifier.presentValue);
           refs.add(oid, PropertyIdentifier.units);
-//          refs.add(oid, PropertyIdentifier.maximumValue);
-//          refs.add(oid, PropertyIdentifier.minimumValue);
-//          refs.add(oid, PropertyIdentifier.averageValue);
-//          refs.add(oid, PropertyIdentifier.maximumValueTimestamp);
-//          refs.add(oid, PropertyIdentifier.minimumValueTimestamp);
+
+          if (oid.getObjectType() == ObjectType.trendLog)
+          {
+            refs.add(oid, PropertyIdentifier.totalRecordCount);
+            refs.add(oid, PropertyIdentifier.recordCount);
+          }
         }
 
-        logger.fine("Start read properties");
+        m_logger.fine("Start read properties");
         final long start = System.currentTimeMillis();
 
-        logger.fine(String.format("Trying to read %d properties", refs.size()));
+        m_logger.fine(String.format("Trying to read %d properties", refs.size()));
 
       
         PropertyValues pvs; 
         try {
           pvs = localDevice.readProperties(rd, refs);
-          logger.fine(String.format("Properties read done in %d ms", System.currentTimeMillis() - start));
+          m_logger.fine(String.format("Properties read done in %d ms", System.currentTimeMillis() - start));
         } catch (BACnetException e) {
           // let's try breaking it up ourselves if it fails
           List<PropertyReferences> lprs = refs.getPropertiesPartitioned(1);
@@ -289,15 +388,31 @@ public class Scan {
           }
         }
 
-        printObject(rd.getObjectIdentifier(), rd.getObjectIdentifier(), pvs, w);
-        for (ObjectIdentifier oid : oids) {
-          printObject(rd.getObjectIdentifier(), oid, pvs, w);
+        try {
+          OID parent = buildObject(localDevice, rd, rd.getObjectIdentifier(), pvs);
+          for (ObjectIdentifier oid : oids) {
+            try {
+              OID child = buildObject(localDevice, rd, oid, pvs);
+              parent.children.add(child);
+            } catch (Exception e) {
+              m_logger.log(Level.SEVERE, "Error creating child object", e);
+            }
+          }
+
+          printObject(parent, parent, w) ;
+          com.google.gson.Gson gson = new com.google.gson.Gson();
+          System.out.println(gson.toJson(parent));
+
+
+        } catch (Exception e) {
+          m_logger.log(Level.SEVERE, "Error creating parent object", e);
         }
 
+
       } catch (BACnetException e) {
-        logger.log(Level.SEVERE, "BACnetException", e);
+        m_logger.log(Level.SEVERE, "BACnetException", e);
       } catch (java.lang.InterruptedException e) {
-        logger.info("Done Scanning Devices");
+        m_logger.info("Done Scanning Devices");
         break;
       }
     }
