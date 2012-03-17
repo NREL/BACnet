@@ -148,6 +148,13 @@ public class Scan {
     s.run();
   }
 
+  static class TrendLogData
+  {
+    com.serotonin.bacnet4j.type.primitive.Date date;
+    com.serotonin.bacnet4j.type.primitive.Time time;
+    String value;
+  };
+
   static class OID
   {
     OID(ObjectIdentifier t_oid, String t_objectName, String t_presentValue, String t_units)
@@ -158,12 +165,15 @@ public class Scan {
       units = t_units;
     
       children = new Vector<OID>();  
+      trendLog = new Vector<TrendLogData>();
     }
 
     ObjectIdentifier oid;
     String objectName;
     String presentValue;
     String units;
+
+    Vector<TrendLogData> trendLog;
 
     Vector<OID> children;
   }
@@ -180,12 +190,80 @@ public class Scan {
           t_oid.presentValue,
           t_oid.units));
 
+    for (TrendLogData tld : t_oid.trendLog)
+    {
+      writer.println(String.format("%s, %s, %s, %s, %s, %s, %s, %s, %s", 
+            t_parent.oid,
+            t_parent.objectName,
+            t_oid.oid.getObjectType(),
+            t_oid.oid.getInstanceNumber(),
+            t_oid.objectName,
+            tld.value,
+            t_oid.units,
+            tld.date,
+            tld.time));
+    }
+
     for (OID child : t_oid.children)
     {
       printObject(t_oid, child, writer);
     }
 
 
+  }
+
+  private String logRecordToString(LogRecord lr)
+  {
+    try {
+      m_logger.fine("trendLogRecord logstatus Data: " + lr.getLogStatus().toString());
+      return lr.getLogStatus().toString();
+    } catch (Exception ex) {}
+    try {
+      m_logger.fine("trendLogRecord boolean Data: " + lr.getBoolean().toString());
+      return lr.getBoolean().toString();
+    } catch (Exception ex) {}
+    try {
+      m_logger.fine("trendLogRecord real Data: " + lr.getReal().toString());
+      return lr.getReal().toString();
+    } catch (Exception ex) {}
+    try {
+      m_logger.fine("trendLogRecord timechange Data: " + lr.getTimeChange().toString()); 
+      return lr.getTimeChange().toString();
+    } catch (Exception ex) {}
+    try {
+      m_logger.fine("trendLogRecord enumerated Data: " + lr.getEnumerated().toString()); 
+      return lr.getEnumerated().toString();
+    } catch (Exception ex) {}
+    try {
+      m_logger.fine("trendLogRecord unsigned integer Data: " + lr.getUnsignedInteger().toString()); 
+      return lr.getUnsignedInteger().toString();
+    } catch (Exception ex) {}
+    try {
+      m_logger.fine("trendLogRecord signed integer Data: " + lr.getSignedInteger().toString());
+      return lr.getSignedInteger().toString();
+    } catch (Exception ex) {}
+    try {
+      m_logger.fine("trendLogRecord bitstring Data: " + lr.getBitString().toString());
+      return lr.getBitString().toString();
+    } catch (Exception ex) {}
+    try {
+      m_logger.fine("trendLogRecord null Data: " + lr.getNull().toString());
+      return lr.getNull().toString();
+    } catch (Exception ex) {}
+    try {
+      m_logger.fine("trendLogRecord bacneterror Data: " + lr.getBACnetError().toString()); 
+      return lr.getBACnetError().toString();
+    } catch (Exception ex) {}
+    try {
+      m_logger.fine("trendLogRecord basetype Data: " + lr.getBaseType().toString());
+      return lr.getBaseType().toString();
+    } catch (Exception ex) {}
+    try {
+      m_logger.fine("trendLogRecord statusflags Data: " + lr.getStatusFlags().toString());
+      return lr.getStatusFlags().toString();
+    } catch (Exception ex) {}
+
+    return "UNKNOWN";
   }
 
   private OID buildObject(LocalDevice ld, RemoteDevice rd, ObjectIdentifier oid, PropertyValues pvs) throws Exception
@@ -195,16 +273,18 @@ public class Scan {
     Encodable presentValue = null;
     Encodable units = null;
 
+    Vector<TrendLogData> trendlogdata = new Vector<TrendLogData>();
+
     try {
       presentValue = pvs.get(oid, PropertyIdentifier.presentValue);
       units = pvs.get(oid, PropertyIdentifier.units);
     } catch (Exception e) {
-      m_logger.log(Level.FINEST, "Exception getting propertyvalue", e);
+      m_logger.log(Level.FINEST, "Exception getting propertyvalu: " + oid.toString(), e);
     }
 
     // if this object is a trend log, then let's get the trend log data
     // adapted from: http://mango.serotoninsoftware.com/forum/posts/list/666.page
-    if (oid.getObjectType() == ObjectType.trendLog)
+    if (oid.getObjectType().equals(ObjectType.trendLog))
     {
       try {
         UnsignedInteger totalRecordCount = (UnsignedInteger) pvs.get(oid, PropertyIdentifier.totalRecordCount);   
@@ -217,18 +297,33 @@ public class Scan {
         ReadRangeAck rra = (ReadRangeAck)ld.send(rd, rrr);   
         m_logger.fine("trendLog itemCount: " + rra.getItemCount());
         m_logger.fine("trendLog firstSequenceNumber: " + rra.getFirstSequenceNumber());
-        m_logger.fine("trendLog itemData: " + rra.getItemData());
+        //        m_logger.fine("trendLog itemData: " + rra.getItemData());
         Iterator<?> it = (Iterator<?>)rra.getItemData().iterator();   
+
+rraloop:
         while (it.hasNext())   
         {   
+          TrendLogData tld = new TrendLogData();
           Encodable e = (Encodable)it.next();   
           if (e instanceof LogRecord)   
           {   
             LogRecord lr = (LogRecord)e;   
-//            m_logger.fine("trendLogRecord Value: " + lr.getEncodable());
-            m_logger.fine("trendLogRecord ChoiceType: " + lr.getChoiceType());
-          }   
-        }   
+            m_logger.fine("trendLogRecord TimeStamp: " + lr.getTimestamp().toString());
+
+            DateTime ts = lr.getTimestamp();
+
+            m_logger.fine("trendLogRecord date: " + ts.getDate().toString());
+            m_logger.fine("trendLogRecord time: " + ts.getTime().toString());
+
+            tld.date = ts.getDate();
+            tld.time = ts.getTime();
+            tld.value = logRecordToString(lr);
+
+            trendlogdata.add(tld);
+          } else {
+            m_logger.warning("Trend log data of unknown type: " + e.toString());
+          }
+        }  
       } catch (Exception e) {
         m_logger.log(Level.SEVERE, "Error with reading trend log from device", e);
       }
@@ -249,6 +344,7 @@ public class Scan {
         (presentValue == null?null:presentValue.toString()), 
         (units == null?null:units.toString())
        );
+    newoid.trendLog = trendlogdata;
     return newoid;
   }
 
@@ -326,7 +422,21 @@ public class Scan {
       w = new java.io.PrintWriter(file, true);
     }
 
-    w.println("Device OID, Device Name, Object Type, Object Instance Number, Object Name, Object Value");
+    java.io.FileOutputStream jsonfile = null;
+    java.io.PrintWriter jsonw = null;
+    try {
+      jsonfile = new java.io.FileOutputStream("output.json");
+    } catch (Exception e) {
+      m_logger.log(Level.SEVERE, "Error opening output file", e);
+    }
+
+    if (jsonfile != null)
+    {
+      jsonw = new java.io.PrintWriter(jsonfile, true);
+    }
+
+
+    w.println("Device OID, Device Name, Object Type, Object Instance Number, Object Name, Object Value, Trend Log Date, Trend Log Time");
 
     while (true)
     {
@@ -354,8 +464,10 @@ public class Scan {
           refs.add(oid, PropertyIdentifier.presentValue);
           refs.add(oid, PropertyIdentifier.units);
 
-          if (oid.getObjectType() == ObjectType.trendLog)
+          m_logger.finer("OID Object: " + oid.toString() + " objectype: " + oid.getObjectType().toString());
+          if (oid.getObjectType().equals(ObjectType.trendLog))
           {
+            m_logger.finer("Adding totalRecordCount and recordCount for oid: " + oid.toString());
             refs.add(oid, PropertyIdentifier.totalRecordCount);
             refs.add(oid, PropertyIdentifier.recordCount);
           }
@@ -401,7 +513,7 @@ public class Scan {
 
           printObject(parent, parent, w) ;
           com.google.gson.Gson gson = new com.google.gson.Gson();
-          System.out.println(gson.toJson(parent));
+          jsonw.println(gson.toJson(parent));
 
 
         } catch (Exception e) {
