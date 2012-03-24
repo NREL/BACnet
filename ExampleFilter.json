@@ -1,0 +1,12 @@
+[
+  {
+    "instanceNumber":".*",
+    "networkNumber":".*",
+    "macAddress":".*",
+    "networkAddress":".*",
+    "oidFilters":[
+      {"objectType":"Binary .*",
+       "instanceNumber":"1.*"}
+    ]
+  }
+]

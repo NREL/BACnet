@@ -23,6 +23,10 @@
 package gov.nrel.bacnet;
 
 import java.io.IOException;
+import java.io.FileInputStream;
+import java.io.Reader;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
@@ -33,6 +37,9 @@ import java.util.HashSet;
 import java.util.logging.*;
 import java.util.ArrayList;   
 import java.util.Iterator;   
+
+import java.nio.charset.Charset;
+import java.lang.Integer;
   
 import com.serotonin.bacnet4j.LocalDevice;   
 import com.serotonin.bacnet4j.RemoteDevice;   
@@ -55,6 +62,7 @@ import com.serotonin.bacnet4j.util.PropertyValues;
 import com.serotonin.bacnet4j.service.confirmed.ReinitializeDeviceRequest.ReinitializedStateOfDevice;
 import com.serotonin.bacnet4j.LocalDevice;
 import com.serotonin.bacnet4j.RemoteDevice;
+import com.serotonin.bacnet4j.Network;
 import com.serotonin.bacnet4j.RemoteObject;
 import com.serotonin.bacnet4j.event.DeviceEventListener;
 import com.serotonin.bacnet4j.exception.BACnetException;
@@ -90,6 +98,7 @@ import com.serotonin.bacnet4j.util.PropertyReferences;
 import com.serotonin.bacnet4j.util.PropertyValues;
 import com.serotonin.bacnet4j.type.enumerated.ObjectType;   
 
+import java.util.regex.*;
 
 public class Scan {
   static class MyExceptionListener extends DefaultExceptionListener {  
@@ -142,9 +151,136 @@ public class Scan {
 
 
   private Logger m_logger;
+  private Vector<DeviceFilter> m_filters;
+
+  public Scan(Vector<DeviceFilter> filters)
+  {
+    m_logger = Logger.getLogger("BACnetScanner");
+    m_filters = filters;
+  }
+
+
+  public static String readFile(String file, Charset cs)
+    throws IOException {
+    // No real need to close the BufferedReader/InputStreamReader
+  // as they're only wrapping the stream
+    FileInputStream stream = new FileInputStream(file);
+    try {
+      Reader reader = new BufferedReader(new InputStreamReader(stream, cs));
+      StringBuilder builder = new StringBuilder();
+      char[] buffer = new char[8192];
+      int read;
+      while ((read = reader.read(buffer, 0, buffer.length)) > 0) {
+        builder.append(buffer, 0, read);
+      }
+      return builder.toString();
+    } finally {
+      // Potential issue here: if this throws an IOException,
+      // it will mask any others. Normally I'd use a utility
+      // method which would log exceptions and swallow them
+      stream.close();
+    }        
+  }
+
+  static class OIDFilter {
+    String objectType;
+    String instanceNumber;
+
+    public boolean matches(ObjectIdentifier t_oid)
+    {
+      String strObjectType = t_oid.getObjectType().toString();
+      String strInstanceNumber = Integer.toString(t_oid.getInstanceNumber());
+
+      return Pattern.matches(objectType, strObjectType)
+        && Pattern.matches(instanceNumber, strInstanceNumber);
+    }
+  }
+
+  static class DeviceFilter {
+    String instanceNumber;
+    String networkNumber;
+    String macAddress;
+    String networkAddress;
+
+    Vector<OIDFilter> oidFilters;
+
+    public boolean matches(RemoteDevice t_rd)
+    {
+      String strInstanceNumber = Integer.toString(t_rd.getInstanceNumber());
+      String strNetworkNumber = "";
+      String strMacAddress = "";
+      String strNetworkAddress = "";
+
+
+      Address a = t_rd.getAddress();
+
+      if (a != null)
+      {
+        strNetworkNumber = a.getNetworkNumber().toString();
+        strMacAddress = a.getMacAddress().toString();
+      }
+
+      Network n = t_rd.getNetwork();
+
+      if (n != null)
+      {
+        strNetworkAddress = n.getNetworkAddress().toString();
+      }
+
+
+      return Pattern.matches(instanceNumber, strInstanceNumber)
+        && Pattern.matches(networkNumber, strNetworkNumber)
+        && Pattern.matches(macAddress, strMacAddress)
+        && Pattern.matches(networkAddress, strNetworkAddress);
+
+    }
+  }
+
 
   public static void main(String[] args) throws Exception {
-    Scan s = new Scan();
+    Vector<DeviceFilter> filters = null; 
+    if (args.length > 0)
+    {
+      String filterfile = readFile(args[0], Charset.forName("US-ASCII"));
+      com.google.gson.Gson gson = new com.google.gson.Gson();
+
+      java.lang.reflect.Type vectortype 
+        = new com.google.gson.reflect.TypeToken<Vector<DeviceFilter>>() {}.getType();
+      filters = gson.fromJson(filterfile, vectortype);
+    } else {
+      /*
+      java.io.FileOutputStream jsonfile = null;
+      java.io.PrintWriter jsonw = null;
+      try {
+        jsonfile = new java.io.FileOutputStream("ExampleFilter.json");
+      } catch (Exception e) {
+      }
+
+      if (jsonfile != null)
+      {
+        jsonw = new java.io.PrintWriter(jsonfile, true);
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        Vector<DeviceFilter> examplefilters = new Vector<DeviceFilter>();
+        DeviceFilter f = new DeviceFilter();
+        f.instanceNumber = ".*";
+        f.networkNumber = ".*";
+        f.macAddress = ".*";
+        f.networkAddress = ".*";
+
+        OIDFilter of = new OIDFilter();
+        of.objectType = "Binary .*";
+        of.instanceNumber = "1.*";
+        f.oidFilters = new Vector<OIDFilter>();
+        f.oidFilters.add(of);
+        examplefilters.add(f);
+        jsonw.println(gson.toJson(examplefilters));
+      }
+      */
+    }
+
+
+
+    Scan s = new Scan(filters);
     s.run();
   }
 
@@ -219,7 +355,7 @@ public class Scan {
       return lr.getLogStatus().toString();
     } catch (Exception ex) {}
     try {
-      m_logger.fine("trendLogRecord boolean Data: " + lr.getBoolean().toString());
+      m_logger.fine("trendLogRecord booleanean Data: " + lr.getBoolean().toString());
       return lr.getBoolean().toString();
     } catch (Exception ex) {}
     try {
@@ -239,7 +375,6 @@ public class Scan {
       return lr.getUnsignedInteger().toString();
     } catch (Exception ex) {}
     try {
-      m_logger.fine("trendLogRecord signed integer Data: " + lr.getSignedInteger().toString());
       return lr.getSignedInteger().toString();
     } catch (Exception ex) {}
     try {
@@ -300,7 +435,6 @@ public class Scan {
         //        m_logger.fine("trendLog itemData: " + rra.getItemData());
         Iterator<?> it = (Iterator<?>)rra.getItemData().iterator();   
 
-rraloop:
         while (it.hasNext())   
         {   
           TrendLogData tld = new TrendLogData();
@@ -348,10 +482,46 @@ rraloop:
     return newoid;
   }
 
+  private boolean deviceMatches(RemoteDevice t_rd, Vector<DeviceFilter> t_filters)
+  {
+    return oidMatches(t_rd, null, t_filters);
+  }
+
+  private boolean oidMatches(RemoteDevice t_rd, ObjectIdentifier t_id, Vector<DeviceFilter> t_filters)
+  {
+    if (t_filters == null)
+    {
+      return true;
+    }
+
+    for (DeviceFilter filter : t_filters) {
+      if (filter.matches(t_rd))
+      {
+        if (t_id == null)
+        {
+          return true;
+        } else {
+          if (filter.oidFilters.isEmpty())
+          {
+            // if there's no oidfilters, accept all of them for this device
+            return true;
+          } else {
+            for (OIDFilter oidFilter : filter.oidFilters)
+            {
+              if (oidFilter.matches(t_id))
+              {
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return false;
+  }
 
   private void run() {
-    m_logger = Logger.getLogger("BACnetScanner");
-
     try {
       FileHandler fh = new FileHandler("LogFile.log", true);
       m_logger.addHandler(fh);
@@ -446,80 +616,90 @@ rraloop:
         {
           break;
         }
-        m_logger.info("Getting device info: " + rd);
-        localDevice.getExtendedDeviceInformation(rd);
 
-        @SuppressWarnings("unchecked")
-        List<ObjectIdentifier> oids = ((SequenceOf<ObjectIdentifier>) localDevice.sendReadPropertyAllowNull(rd, rd.getObjectIdentifier(), PropertyIdentifier.objectList)).getValues();
+        if (deviceMatches(rd, m_filters))
+        {
+          m_logger.info("Getting device info: " + rd);
+          localDevice.getExtendedDeviceInformation(rd);
 
-        m_logger.info("Getting device info: " + rd);
-        m_logger.fine("Oids found: " + Integer.toString(oids.size()));
-        PropertyReferences refs = new PropertyReferences();
-        // add the property references of the "device object" to the list
-        refs.add(rd.getObjectIdentifier(), PropertyIdentifier.objectName);
+          @SuppressWarnings("unchecked")
+            List<ObjectIdentifier> oids = ((SequenceOf<ObjectIdentifier>) localDevice.sendReadPropertyAllowNull(rd, rd.getObjectIdentifier(), PropertyIdentifier.objectList)).getValues();
 
-        // and now from all objects under the device object >> ai0, ai1,bi0,bi1...
-        for (ObjectIdentifier oid : oids) {
-          refs.add(oid, PropertyIdentifier.objectName);
-          refs.add(oid, PropertyIdentifier.presentValue);
-          refs.add(oid, PropertyIdentifier.units);
+          m_logger.info("Getting device info: " + rd);
+          m_logger.fine("Oids found: " + Integer.toString(oids.size()));
+          PropertyReferences refs = new PropertyReferences();
+          // add the property references of the "device object" to the list
+          refs.add(rd.getObjectIdentifier(), PropertyIdentifier.objectName);
 
-          m_logger.finer("OID Object: " + oid.toString() + " objectype: " + oid.getObjectType().toString());
-          if (oid.getObjectType().equals(ObjectType.trendLog))
-          {
-            m_logger.finer("Adding totalRecordCount and recordCount for oid: " + oid.toString());
-            refs.add(oid, PropertyIdentifier.totalRecordCount);
-            refs.add(oid, PropertyIdentifier.recordCount);
-          }
-        }
-
-        m_logger.fine("Start read properties");
-        final long start = System.currentTimeMillis();
-
-        m_logger.fine(String.format("Trying to read %d properties", refs.size()));
-
-      
-        PropertyValues pvs; 
-        try {
-          pvs = localDevice.readProperties(rd, refs);
-          m_logger.fine(String.format("Properties read done in %d ms", System.currentTimeMillis() - start));
-        } catch (BACnetException e) {
-          // let's try breaking it up ourselves if it fails
-          List<PropertyReferences> lprs = refs.getPropertiesPartitioned(1);
-
-          pvs = new PropertyValues();
-          for (PropertyReferences prs: lprs)
-          {
-            PropertyValues lpvs = localDevice.readProperties(rd, prs);
-
-            for (ObjectPropertyReference opr : lpvs)
-            {
-              pvs.add(opr.getObjectIdentifier(), opr.getPropertyIdentifier(), opr.getPropertyArrayIndex(), 
-                  lpvs.getNoErrorCheck(opr));
-            }
-          }
-        }
-
-        try {
-          OID parent = buildObject(localDevice, rd, rd.getObjectIdentifier(), pvs);
+          // and now from all objects under the device object >> ai0, ai1,bi0,bi1...
           for (ObjectIdentifier oid : oids) {
-            try {
-              OID child = buildObject(localDevice, rd, oid, pvs);
-              parent.children.add(child);
-            } catch (Exception e) {
-              m_logger.log(Level.SEVERE, "Error creating child object", e);
+            if (oidMatches(rd, oid, m_filters))
+            {
+              refs.add(oid, PropertyIdentifier.objectName);
+              refs.add(oid, PropertyIdentifier.presentValue);
+              refs.add(oid, PropertyIdentifier.units);
+
+              m_logger.finer("OID Object: " + oid.toString() + " objectype: " + oid.getObjectType().toString());
+              if (oid.getObjectType().equals(ObjectType.trendLog))
+              {
+                m_logger.finer("Adding totalRecordCount and recordCount for oid: " + oid.toString());
+                refs.add(oid, PropertyIdentifier.totalRecordCount);
+                refs.add(oid, PropertyIdentifier.recordCount);
+              }
+            } else {
+              m_logger.finest("Skipping OID, no filter matched: " + oid.toString());
             }
           }
 
-          printObject(parent, parent, w) ;
-          com.google.gson.Gson gson = new com.google.gson.Gson();
-          jsonw.println(gson.toJson(parent));
+          m_logger.fine("Start read properties");
+          final long start = System.currentTimeMillis();
+
+          m_logger.fine(String.format("Trying to read %d properties", refs.size()));
 
 
-        } catch (Exception e) {
-          m_logger.log(Level.SEVERE, "Error creating parent object", e);
+          PropertyValues pvs; 
+          try {
+            pvs = localDevice.readProperties(rd, refs);
+            m_logger.fine(String.format("Properties read done in %d ms", System.currentTimeMillis() - start));
+          } catch (BACnetException e) {
+            // let's try breaking it up ourselves if it fails
+            List<PropertyReferences> lprs = refs.getPropertiesPartitioned(1);
+
+            pvs = new PropertyValues();
+            for (PropertyReferences prs: lprs)
+            {
+              PropertyValues lpvs = localDevice.readProperties(rd, prs);
+
+              for (ObjectPropertyReference opr : lpvs)
+              {
+                pvs.add(opr.getObjectIdentifier(), opr.getPropertyIdentifier(), opr.getPropertyArrayIndex(), 
+                    lpvs.getNoErrorCheck(opr));
+              }
+            }
+          }
+
+          try {
+            OID parent = buildObject(localDevice, rd, rd.getObjectIdentifier(), pvs);
+            for (ObjectIdentifier oid : oids) {
+              try {
+                OID child = buildObject(localDevice, rd, oid, pvs);
+                parent.children.add(child);
+              } catch (Exception e) {
+                m_logger.log(Level.SEVERE, "Error creating child object", e);
+              }
+            }
+
+            printObject(parent, parent, w) ;
+            com.google.gson.Gson gson = new com.google.gson.Gson();
+            jsonw.println(gson.toJson(parent));
+         
+
+          } catch (Exception e) {
+            m_logger.log(Level.SEVERE, "Error creating parent object", e);
+          }
+        } else {
+          m_logger.finest("Skipping device, no filter matches: " + rd.toString());
         }
-
 
       } catch (BACnetException e) {
         m_logger.log(Level.SEVERE, "BACnetException", e);
