@@ -22,83 +22,96 @@
  */
 package gov.nrel.bacnet;
 
-import java.io.IOException;
-import java.io.FileInputStream;
-import java.io.Reader;
+import java.nio.charset.Charset;
+
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Vector;
+import java.io.IOException;
+import java.io.Reader;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.HashSet;
 import java.util.logging.*;
-import java.util.ArrayList;   
-import java.util.Iterator;   
+import java.util.regex.*;
 
-import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;   
+import java.util.List;
+import java.util.Vector;
+
 import java.lang.Integer;
+
+import com.serotonin.util.IpAddressUtils;
+import com.serotonin.util.queue.*;
   
 import com.serotonin.bacnet4j.LocalDevice;   
 import com.serotonin.bacnet4j.RemoteDevice;   
+import com.serotonin.bacnet4j.Network;
+import com.serotonin.bacnet4j.RemoteObject;
+
 import com.serotonin.bacnet4j.base.BACnetUtils;   
+
 import com.serotonin.bacnet4j.event.DefaultDeviceEventListener;   
-import com.serotonin.bacnet4j.service.acknowledgement.ReadRangeAck;   
-import com.serotonin.bacnet4j.service.confirmed.ReadRangeRequest;   
-import com.serotonin.bacnet4j.service.confirmed.ReadRangeRequest.BySequenceNumber;   
-import com.serotonin.bacnet4j.type.Encodable;   
-import com.serotonin.bacnet4j.type.constructed.Address;   
-import com.serotonin.bacnet4j.type.constructed.LogRecord;   
-import com.serotonin.bacnet4j.type.enumerated.ObjectType;   
-import com.serotonin.bacnet4j.type.enumerated.PropertyIdentifier;   
-import com.serotonin.bacnet4j.type.primitive.ObjectIdentifier;   
-import com.serotonin.bacnet4j.type.primitive.SignedInteger;   
-import com.serotonin.bacnet4j.type.primitive.UnsignedInteger;   
+import com.serotonin.bacnet4j.event.DefaultExceptionListener;
+import com.serotonin.bacnet4j.event.DeviceEventListener;
+
+
 import com.serotonin.bacnet4j.util.PropertyReferences;   
 import com.serotonin.bacnet4j.util.PropertyValues;   
 
-import com.serotonin.bacnet4j.service.confirmed.ReinitializeDeviceRequest.ReinitializedStateOfDevice;
-import com.serotonin.bacnet4j.LocalDevice;
-import com.serotonin.bacnet4j.RemoteDevice;
-import com.serotonin.bacnet4j.Network;
-import com.serotonin.bacnet4j.RemoteObject;
-import com.serotonin.bacnet4j.event.DeviceEventListener;
-import com.serotonin.bacnet4j.exception.BACnetException;
 import com.serotonin.bacnet4j.obj.BACnetObject;
-import com.serotonin.bacnet4j.type.Encodable;
-import com.serotonin.bacnet4j.event.DeviceEventListener;
-import com.serotonin.bacnet4j.event.DefaultDeviceEventListener;
-import com.serotonin.bacnet4j.event.DefaultExceptionListener;
-import com.serotonin.bacnet4j.exception.BACnetException;
+import com.serotonin.bacnet4j.obj.FileObject;
+
+import com.serotonin.bacnet4j.service.acknowledgement.ReadRangeAck;   
+
+import com.serotonin.bacnet4j.service.confirmed.ReadRangeRequest;   
+import com.serotonin.bacnet4j.service.confirmed.ReadRangeRequest.BySequenceNumber;   
+import com.serotonin.bacnet4j.service.confirmed.ReinitializeDeviceRequest.ReinitializedStateOfDevice;
+
 import com.serotonin.bacnet4j.service.unconfirmed.WhoIsRequest;
-import com.serotonin.util.IpAddressUtils;
-import com.serotonin.util.queue.*;
+
+import com.serotonin.bacnet4j.type.Encodable;   
+
+import com.serotonin.bacnet4j.type.primitive.ObjectIdentifier;   
+import com.serotonin.bacnet4j.type.primitive.Real;
+import com.serotonin.bacnet4j.type.primitive.SignedInteger;   
+import com.serotonin.bacnet4j.type.primitive.UnsignedInteger;   
+
+import com.serotonin.bacnet4j.type.enumerated.BinaryPV;
+import com.serotonin.bacnet4j.type.enumerated.EngineeringUnits;
+import com.serotonin.bacnet4j.type.enumerated.EventState;
+import com.serotonin.bacnet4j.type.enumerated.EventType;
+import com.serotonin.bacnet4j.type.enumerated.FileAccessMethod;
+import com.serotonin.bacnet4j.type.enumerated.MessagePriority;
+import com.serotonin.bacnet4j.type.enumerated.NotifyType;
+import com.serotonin.bacnet4j.type.enumerated.ObjectType;   
+import com.serotonin.bacnet4j.type.enumerated.PropertyIdentifier;   
+import com.serotonin.bacnet4j.type.enumerated.Segmentation;
+
+import com.serotonin.bacnet4j.type.constructed.Address;   
 import com.serotonin.bacnet4j.type.constructed.Choice;
 import com.serotonin.bacnet4j.type.constructed.DateTime;
+import com.serotonin.bacnet4j.type.constructed.LogRecord;   
 import com.serotonin.bacnet4j.type.constructed.ObjectPropertyReference;
 import com.serotonin.bacnet4j.type.constructed.PropertyValue;
 import com.serotonin.bacnet4j.type.constructed.SequenceOf;
 import com.serotonin.bacnet4j.type.constructed.TimeStamp;
-import com.serotonin.bacnet4j.type.enumerated.EventState;
-import com.serotonin.bacnet4j.type.enumerated.EventType;
-import com.serotonin.bacnet4j.type.enumerated.MessagePriority;
-import com.serotonin.bacnet4j.type.enumerated.NotifyType;
-import com.serotonin.bacnet4j.type.enumerated.PropertyIdentifier;
-import com.serotonin.bacnet4j.type.enumerated.Segmentation;
+
 import com.serotonin.bacnet4j.type.notificationParameters.NotificationParameters;
+
 import com.serotonin.bacnet4j.type.primitive.Boolean;
 import com.serotonin.bacnet4j.type.primitive.CharacterString;
 import com.serotonin.bacnet4j.type.primitive.ObjectIdentifier;
-import com.serotonin.bacnet4j.type.primitive.UnsignedInteger;
 import com.serotonin.bacnet4j.type.primitive.SignedInteger;
 import com.serotonin.bacnet4j.type.primitive.Unsigned16;
-import com.serotonin.bacnet4j.util.PropertyReferences;
-import com.serotonin.bacnet4j.util.PropertyValues;
-import com.serotonin.bacnet4j.type.enumerated.ObjectType;   
+import com.serotonin.bacnet4j.type.primitive.UnsignedInteger;
 
-import java.util.regex.*;
+import com.serotonin.bacnet4j.exception.BACnetException;
+
 
 public class Scan {
   static class MyExceptionListener extends DefaultExceptionListener {  
@@ -112,7 +125,120 @@ public class Scan {
         else  
           super.unimplementedVendorService(vendorId, serviceNumber, queue);  
       }  
-  }  
+  }
+
+  static class SlaveDevice {
+    private BACnetObject ai0;
+    private BACnetObject ai1;
+    private BACnetObject bi0;
+    private BACnetObject bi1;
+
+    private BACnetObject mso0;
+    private BACnetObject ao0;
+    private BACnetObject av0;
+    private FileObject file0;
+    private BACnetObject bv1;
+
+    public SlaveDevice(LocalDevice ld)
+    {
+      try {
+        ld.getConfiguration().setProperty(PropertyIdentifier.objectName,
+            new CharacterString("BACnet4J slave device test"));
+        ld.getConfiguration().setProperty(PropertyIdentifier.vendorIdentifier,
+            new Unsigned16(513));
+        ld.getConfiguration().setProperty(PropertyIdentifier.segmentationSupported,
+            Segmentation.segmentedBoth);
+
+        // Set up a few objects.
+        ai0 = new BACnetObject(ld,
+            ld.getNextInstanceObjectIdentifier(ObjectType.analogInput));
+        ai0.setProperty(PropertyIdentifier.units, EngineeringUnits.centimeters);
+        ld.addObject(ai0);
+
+        ai1 = new BACnetObject(ld,
+            ld.getNextInstanceObjectIdentifier(ObjectType.analogInput));
+        ai1.setProperty(PropertyIdentifier.units, EngineeringUnits.percentObscurationPerFoot);
+        ld.addObject(ai1);
+
+        bi0 = new BACnetObject(ld,
+            ld.getNextInstanceObjectIdentifier(ObjectType.binaryInput));
+        ld.addObject(bi0);
+        bi0.setProperty(PropertyIdentifier.objectName, new CharacterString("Off and on"));
+        bi0.setProperty(PropertyIdentifier.inactiveText, new CharacterString("Off"));
+        bi0.setProperty(PropertyIdentifier.activeText, new CharacterString("On"));
+
+        bi1 = new BACnetObject(ld,
+            ld.getNextInstanceObjectIdentifier(ObjectType.binaryInput));
+        ld.addObject(bi1);
+        bi1.setProperty(PropertyIdentifier.objectName, new CharacterString("Good and bad"));
+        bi1.setProperty(PropertyIdentifier.inactiveText, new CharacterString("Bad"));
+        bi1.setProperty(PropertyIdentifier.activeText, new CharacterString("Good"));
+
+        mso0 = new BACnetObject(ld,
+            ld.getNextInstanceObjectIdentifier(ObjectType.multiStateOutput));
+        mso0.setProperty(PropertyIdentifier.objectName, new CharacterString("Vegetable"));
+        mso0.setProperty(PropertyIdentifier.numberOfStates, new UnsignedInteger(4));
+        mso0.setProperty(PropertyIdentifier.stateText, 1, new CharacterString("Tomato"));
+        mso0.setProperty(PropertyIdentifier.stateText, 2, new CharacterString("Potato"));
+        mso0.setProperty(PropertyIdentifier.stateText, 3, new CharacterString("Onion"));
+        mso0.setProperty(PropertyIdentifier.stateText, 4, new CharacterString("Broccoli"));
+        mso0.setProperty(PropertyIdentifier.presentValue, new UnsignedInteger(1));
+        ld.addObject(mso0);
+
+        ao0 = new BACnetObject(ld,
+            ld.getNextInstanceObjectIdentifier(ObjectType.analogOutput));
+        ao0.setProperty(PropertyIdentifier.objectName, new CharacterString("Settable analog"));
+        ld.addObject(ao0);
+
+        av0 = new BACnetObject(ld,
+            ld.getNextInstanceObjectIdentifier(ObjectType.analogValue));
+        av0.setProperty(PropertyIdentifier.objectName, new CharacterString("Command Priority Test"));
+        av0.setProperty(PropertyIdentifier.relinquishDefault, new Real(3.1415F));
+        ld.addObject(av0);
+
+        file0 = new FileObject(ld, ld.getNextInstanceObjectIdentifier(ObjectType.file),
+            new File("testFile.txt"), FileAccessMethod.streamAccess);
+        file0.setProperty(PropertyIdentifier.fileType, new CharacterString("aTestFile"));
+        file0.setProperty(PropertyIdentifier.archive, new Boolean(false));
+        ld.addObject(file0);
+
+        bv1 = new BACnetObject(ld,
+            ld.getNextInstanceObjectIdentifier(ObjectType.binaryValue));
+        bv1.setProperty(PropertyIdentifier.objectName, new CharacterString("A binary value"));
+        bv1.setProperty(PropertyIdentifier.inactiveText, new CharacterString("Down"));
+        bv1.setProperty(PropertyIdentifier.activeText, new CharacterString("Up"));
+        ld.addObject(bv1);
+      } catch (java.lang.Exception e) {
+      }
+
+    } 
+
+    public void updateValues()
+    {
+      float ai0value = 0;
+      float ai1value = 0;
+      boolean bi0value = false;
+      boolean bi1value = false;
+
+      try {
+        mso0.setProperty(PropertyIdentifier.presentValue, new UnsignedInteger(2));
+
+        // Change the values.
+        ai0value += 0.1;
+        ai1value += 0.7;
+        bi0value = !bi0value;
+        bi1value = !bi1value;
+
+        // Update the values in the objects.
+        ai0.setProperty(PropertyIdentifier.presentValue, new Real(ai0value));
+        ai1.setProperty(PropertyIdentifier.presentValue, new Real(ai1value));
+        bi0.setProperty(PropertyIdentifier.presentValue, bi0value ? BinaryPV.active : BinaryPV.inactive);
+        bi1.setProperty(PropertyIdentifier.presentValue, bi1value ? BinaryPV.active : BinaryPV.inactive);
+      } catch (java.lang.Exception e) {
+      }
+
+    }   
+  } 
 
   static class Handler extends DefaultDeviceEventListener {
     private BlockingQueue<RemoteDevice> m_devices;
@@ -148,6 +274,8 @@ public class Scan {
       return m_devices;
     }
   }
+
+  
 
 
   private Logger m_logger;
@@ -521,6 +649,44 @@ public class Scan {
     return false;
   }
 
+  private void broadcastWhois(LocalDevice localDevice, int low, int high)
+  {
+    byte[] ip = new byte[4];
+    ip[0] = (byte) 192; // A
+    ip[1] = (byte) 168; // B
+    ip[2] = (byte) 2; // C
+    ip[3] = (byte) 0; // D
+
+    WhoIsRequest whois;
+    if (low == 0 && high == 0)
+    {
+      whois = new WhoIsRequest();
+    } else {
+      whois = new WhoIsRequest(new UnsignedInteger(low), new UnsignedInteger(high));
+    }
+
+    while (true) {
+      String ipstr = IpAddressUtils.toIpString(ip);
+      localDevice.setBroadcastAddress(ipstr);
+      m_logger.fine("Scanning IP: " + ipstr);
+      try {
+        localDevice.sendBroadcast(whois);
+      }
+      catch (BACnetException e) {
+        m_logger.log(Level.WARNING, "Exception occured with ip " + ipstr, e);
+      }
+
+      try {
+        increment(ip);
+      }
+      catch (Exception e) {
+        m_logger.info("Done pinging devices");
+        break;
+      }
+    }
+
+  }
+
   private void run() {
     try {
       FileHandler fh = new FileHandler("LogFile.log", true);
@@ -548,33 +714,10 @@ public class Scan {
       return;
     }
 
+    /// let's act as a slave device while we are up and running
+    SlaveDevice sd = new SlaveDevice(localDevice);
 
-    byte[] ip = new byte[4];
-    ip[0] = (byte) 192; // A
-    ip[1] = (byte) 168; // B
-    ip[2] = (byte) 2; // C
-    ip[3] = (byte) 0; // D
-
-    WhoIsRequest whois = new WhoIsRequest();
-    while (true) {
-      String ipstr = IpAddressUtils.toIpString(ip);
-      localDevice.setBroadcastAddress(ipstr);
-      m_logger.fine("Scanning IP: " + ipstr);
-      try {
-        localDevice.sendBroadcast(whois);
-      }
-      catch (BACnetException e) {
-        m_logger.log(Level.WARNING, "Exception occured with ip " + ipstr, e);
-      }
-
-      try {
-        increment(ip);
-      }
-      catch (Exception e) {
-        m_logger.info("Done pinging devices");
-        break;
-      }
-    }
+    broadcastWhois(localDevice, 0, 0);
 
     BlockingQueue<RemoteDevice> remoteDevices = h.remoteDevices();
 
@@ -612,6 +755,7 @@ public class Scan {
     {
       try {
         RemoteDevice rd = remoteDevices.poll(300, TimeUnit.SECONDS);
+        broadcastWhois(localDevice, rd.getInstanceNumber() - 500, rd.getInstanceNumber() + 500);
         if (rd == null)
         {
           break;
@@ -730,7 +874,7 @@ public class Scan {
         value = (ip[1] & 0xff) + 1;
         if (value < 256) {
           ip[1] = (byte) value;
-          System.out.println("B=" + value);
+         System.out.println("B=" + value);
         }
         else {
           ip[1] = 0;
@@ -740,7 +884,7 @@ public class Scan {
             System.out.println("A=" + value);
           }
           else
-            throw new Exception("done");
+             throw new Exception("done");
         }
       }
       */
