@@ -280,11 +280,15 @@ public class Scan {
 
   private Logger m_logger;
   private Vector<DeviceFilter> m_filters;
+  private int m_min;
+  private int m_max;
 
-  public Scan(Vector<DeviceFilter> filters)
+  public Scan(int min, int max, Vector<DeviceFilter> filters)
   {
     m_logger = Logger.getLogger("BACnetScanner");
     m_filters = filters;
+    m_min = min;
+    m_max = max;
   }
 
 
@@ -367,9 +371,23 @@ public class Scan {
 
   public static void main(String[] args) throws Exception {
     Vector<DeviceFilter> filters = null; 
+    int min = -1;
+    int max = -1;
+
     if (args.length > 0)
     {
-      String filterfile = readFile(args[0], Charset.forName("US-ASCII"));
+      min = Integer.parseInt(args[0]); 
+      max = min;
+    }
+
+    if (args.length > 1)
+    {
+      max = Integer.parseInt(args[1]);
+    }
+
+    if (args.length > 2)
+    {
+      String filterfile = readFile(args[2], Charset.forName("US-ASCII"));
       com.google.gson.Gson gson = new com.google.gson.Gson();
 
       java.lang.reflect.Type vectortype 
@@ -408,7 +426,7 @@ public class Scan {
 
 
 
-    Scan s = new Scan(filters);
+    Scan s = new Scan(min, max, filters);
     s.run();
   }
 
@@ -658,10 +676,25 @@ public class Scan {
     ip[3] = (byte) 0; // D
 
     WhoIsRequest whois;
-    if (low == 0 && high == 0)
+    if (low == -1 && high == -1)
     {
       whois = new WhoIsRequest();
     } else {
+      if (low < m_min)
+      {
+        low = m_min;
+      } 
+
+      if (high > m_max)
+      {
+        high = m_max;
+      }
+
+      if (low < 0) low = 0;
+      if (high < 0) high = 0;
+
+      m_logger.info("Scanning device ids: " + low + " to " + high);
+
       whois = new WhoIsRequest(new UnsignedInteger(low), new UnsignedInteger(high));
     }
 
@@ -699,6 +732,8 @@ public class Scan {
 
     m_logger.setLevel(Level.ALL);
 
+    m_logger.info("Scanning device ids: " + m_min + " to " + m_max);
+
     LocalDevice localDevice = new LocalDevice(1234, "192.168.2.255");
     localDevice.setPort(LocalDevice.DEFAULT_PORT);
     localDevice.setTimeout(localDevice.getTimeout() * 3);
@@ -717,7 +752,7 @@ public class Scan {
     /// let's act as a slave device while we are up and running
     SlaveDevice sd = new SlaveDevice(localDevice);
 
-    broadcastWhois(localDevice, 0, 0);
+    broadcastWhois(localDevice, m_min, m_max);
 
     BlockingQueue<RemoteDevice> remoteDevices = h.remoteDevices();
 
@@ -754,8 +789,13 @@ public class Scan {
     while (true)
     {
       try {
-        RemoteDevice rd = remoteDevices.poll(300, TimeUnit.SECONDS);
-        broadcastWhois(localDevice, rd.getInstanceNumber() - 500, rd.getInstanceNumber() + 500);
+        RemoteDevice rd = remoteDevices.poll(10, TimeUnit.SECONDS);
+
+        int min = rd.getInstanceNumber() - 500;
+        int max = rd.getInstanceNumber() + 500;
+
+        broadcastWhois(localDevice, min, max);
+
         if (rd == null)
         {
           break;

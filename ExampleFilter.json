@@ -1,12 +1,12 @@
 [
   {
-    "instanceNumber":".*",
+    "instanceNumber":"13200",
     "networkNumber":".*",
     "macAddress":".*",
     "networkAddress":".*",
     "oidFilters":[
       {"objectType":"Binary .*",
-       "instanceNumber":"1.*"}
+       "instanceNumber":".*"}
     ]
   }
 ]
