@@ -111,6 +111,7 @@ import com.serotonin.bacnet4j.type.primitive.Unsigned16;
 import com.serotonin.bacnet4j.type.primitive.UnsignedInteger;
 
 import com.serotonin.bacnet4j.exception.BACnetException;
+import java.util.Date;
 
 
 public class Scan {
@@ -471,6 +472,13 @@ public class Scan {
           t_oid.objectName,
           t_oid.presentValue,
           t_oid.units));
+    
+    SDISender sender = new SDISender();
+    com.google.gson.JsonObject jObj = new com.google.gson.JsonObject();
+    jObj.add(new Long(new Date().getTime()).toString(), 
+            new com.google.gson.JsonPrimitive(t_oid.presentValue));
+    sender.sendData("modRaw", t_parent.objectName + "_" + t_oid.objectName, 
+            jObj);
 
     for (TrendLogData tld : t_oid.trendLog)
     {
