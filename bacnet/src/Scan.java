@@ -22,7 +22,6 @@
  */
 package gov.nrel.bacnet;
 
-import java.nio.charset.Charset;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -30,6 +29,11 @@ import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.Reader;
+
+import java.net.NetworkInterface;
+import java.net.InterfaceAddress;
+
+import java.nio.charset.Charset;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -281,12 +285,14 @@ public class Scan {
 
   private Logger m_logger;
   private Vector<DeviceFilter> m_filters;
+  private java.net.NetworkInterface m_networkInterface;
   private int m_min;
   private int m_max;
 
-  public Scan(int min, int max, Vector<DeviceFilter> filters)
+  public Scan(java.net.NetworkInterface ni, int min, int max, Vector<DeviceFilter> filters)
   {
     m_logger = Logger.getLogger("BACnetScanner");
+    m_networkInterface = ni;
     m_filters = filters;
     m_min = min;
     m_max = max;
@@ -375,20 +381,36 @@ public class Scan {
     int min = -1;
     int max = -1;
 
-    if (args.length > 0)
+    if (args.length < 1)
     {
-      min = Integer.parseInt(args[0]); 
-      max = min;
+      System.out.println("Usage: <ethernetdevice> [mindeviceid] [maxdeviceid] [jsonfilterdefinitionfile]\n");
+      System.exit(-1);
     }
+
+    NetworkInterface networkinterface = null;
+   
+    try {
+      networkinterface = java.net.NetworkInterface.getByName(args[0]);
+    } catch (Exception ex) {
+      System.out.println("Unable to open device: " + args[0]);
+      System.exit(-1);
+    }
+
 
     if (args.length > 1)
     {
-      max = Integer.parseInt(args[1]);
+      min = Integer.parseInt(args[1]); 
+      max = min;
     }
 
     if (args.length > 2)
     {
-      String filterfile = readFile(args[2], Charset.forName("US-ASCII"));
+      max = Integer.parseInt(args[2]);
+    }
+
+    if (args.length > 3)
+    {
+      String filterfile = readFile(args[3], Charset.forName("US-ASCII"));
       com.google.gson.Gson gson = new com.google.gson.Gson();
 
       java.lang.reflect.Type vectortype 
@@ -427,7 +449,7 @@ public class Scan {
 
 
 
-    Scan s = new Scan(min, max, filters);
+    Scan s = new Scan(networkinterface, min, max, filters);
     s.run();
   }
 
@@ -742,7 +764,28 @@ public class Scan {
 
     m_logger.info("Scanning device ids: " + m_min + " to " + m_max);
 
-    LocalDevice localDevice = new LocalDevice(1234, "192.168.2.255");
+    List<InterfaceAddress> addresses = m_networkInterface.getInterfaceAddresses();
+
+    String sbroadcast = null;
+    String saddress = null;
+
+    for (InterfaceAddress address: addresses) {
+      m_logger.fine("Evaluating address: " + address.toString());
+      if (address.getAddress().getAddress().length == 4)
+      {
+        m_logger.info("Address is ipv4, selecting: " + address.toString());
+        sbroadcast = address.getBroadcast().toString().substring(1);
+        saddress = address.getAddress().toString().substring(1);
+        break;
+      } else {
+        m_logger.info("Address is not ipv4, not selecting: " + address.toString());
+      }
+    }
+
+    m_logger.info("Binding to: " + saddress + " " + sbroadcast);
+
+    m_logger.severe("We cannot bind to the specific interface, bacnet4j doesn't work when we do");
+    LocalDevice localDevice = new LocalDevice(1234, sbroadcast);
     localDevice.setPort(LocalDevice.DEFAULT_PORT);
     localDevice.setTimeout(localDevice.getTimeout() * 3);
     localDevice.setSegTimeout(localDevice.getSegTimeout() * 3);
@@ -758,7 +801,7 @@ public class Scan {
     }
 
     /// let's act as a slave device while we are up and running
-    SlaveDevice sd = new SlaveDevice(localDevice);
+    // SlaveDevice sd = new SlaveDevice(localDevice);
 
     broadcastWhois(localDevice, m_min, m_max);
 
@@ -799,15 +842,16 @@ public class Scan {
       try {
         RemoteDevice rd = remoteDevices.poll(10, TimeUnit.SECONDS);
 
+        if (rd == null)
+        {
+          break;
+        }
+
         int min = rd.getInstanceNumber() - 500;
         int max = rd.getInstanceNumber() + 500;
 
         broadcastWhois(localDevice, min, max);
 
-        if (rd == null)
-        {
-          break;
-        }
 
         if (deviceMatches(rd, m_filters))
         {
