@@ -22,7 +22,6 @@
  */
 package gov.nrel.bacnet;
 
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -46,6 +45,7 @@ import java.util.HashSet;
 import java.util.Iterator;   
 import java.util.List;
 import java.util.Vector;
+import java.util.Scanner;
 
 import java.lang.Integer;
 
@@ -115,6 +115,7 @@ import com.serotonin.bacnet4j.type.primitive.Unsigned16;
 import com.serotonin.bacnet4j.type.primitive.UnsignedInteger;
 
 import com.serotonin.bacnet4j.exception.BACnetException;
+import java.sql.Timestamp;
 import java.util.Date;
 
 
@@ -396,7 +397,6 @@ public class Scan {
       System.exit(-1);
     }
 
-
     if (args.length > 1)
     {
       min = Integer.parseInt(args[1]); 
@@ -497,10 +497,12 @@ public class Scan {
     
     SDISender sender = new SDISender();
     com.google.gson.JsonObject jObj = new com.google.gson.JsonObject();
-    jObj.add(new Long(new Date().getTime()).toString(), 
+    if (t_oid.presentValue != null) {
+      jObj.add(new Long(new Date().getTime()).toString(), 
             new com.google.gson.JsonPrimitive(t_oid.presentValue));
-    sender.sendData("modRaw", t_parent.objectName + "_" + t_oid.objectName, 
+      sender.sendData("modRaw", t_parent.objectName + "_" + t_oid.objectName, 
             jObj);
+    }
 
     for (TrendLogData tld : t_oid.trendLog)
     {
@@ -807,11 +809,14 @@ public class Scan {
 
     BlockingQueue<RemoteDevice> remoteDevices = h.remoteDevices();
 
+    java.util.Date date = new java.util.Date();
+    String csv_outputname = "output-" + new Timestamp(date.getTime()).toString() + ".csv";
+    String json_outputname = "output-" + new Timestamp(date.getTime()).toString() + ".json";
 
     java.io.FileOutputStream file = null;
     java.io.PrintWriter w = null;
     try {
-      file = new java.io.FileOutputStream("output.csv");
+      file = new java.io.FileOutputStream(csv_outputname);
     } catch (Exception e) {
       m_logger.log(Level.SEVERE, "Error opening output file", e);
     }
@@ -824,7 +829,7 @@ public class Scan {
     java.io.FileOutputStream jsonfile = null;
     java.io.PrintWriter jsonw = null;
     try {
-      jsonfile = new java.io.FileOutputStream("output.json");
+      jsonfile = new java.io.FileOutputStream(json_outputname);
     } catch (Exception e) {
       m_logger.log(Level.SEVERE, "Error opening output file", e);
     }
@@ -834,7 +839,7 @@ public class Scan {
       jsonw = new java.io.PrintWriter(jsonfile, true);
     }
 
-
+    w.println(new Timestamp(date.getTime()));
     w.println("Device OID, Device Name, Object Type, Object Instance Number, Object Name, Object Value, Trend Log Date, Trend Log Time");
 
     while (true)
@@ -945,6 +950,22 @@ public class Scan {
       }
     }
 
+    // Send CSV files to building agent
+    BASender ba_sender = new BASender();
+    com.google.gson.JsonObject jObj = new com.google.gson.JsonObject();
+    System.out.println("attempting to send data to boa");
+    System.out.println("CSV File is " + csv_outputname);
+    try {
+      String output = new Scanner( new File("./" + csv_outputname) ).useDelimiter("\\Z").next();
+      ba_sender.sendData(output);
+    } catch (Exception e) {
+      System.out.println("could not open file to send: " + e.getMessage());
+    }
+
+
+
+    
+    
     localDevice.terminate();
   }
 

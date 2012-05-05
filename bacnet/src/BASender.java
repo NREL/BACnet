@@ -17,42 +17,50 @@ import java.net.URL;
  *
  * @author abeach
  */
-public class SDISender {
-    String HOST_URL = "http://sdi-prod-01.nrel.gov:8080/SDI";
+public class BASender {
+    String HOST_URL = "http://buildingagenttest.nrel.gov:5502/api/data_receiver.xml";
     
-    public SDISender() {
+    public BASender() {
         
     }
     
-    public SDISender(String SDIUrl) {
-        this.HOST_URL = SDIUrl;
+    public BASender(String BAUrl) {
+        this.HOST_URL = BAUrl;
     }
     
-    public void sendData(String modName, String key, com.google.gson.JsonObject jObj) {
+    public void sendData(String data) {
         InputStreamReader is = null;
         BufferedReader rd = null;
         OutputStreamWriter wr = null;
 
         try {
-
+            //prepare data for sending
+            data = data.replace("&", "&amp;");
+            data = data.replace("<", "&lt;");
+            data = data.replace(">", "&gt;");
+            data = data.replace("<", "&lt;");
+            data = data.replace("'", "&apos;");
+            data = data.replace("\"", "&quot;");
+            data = data.replace("%","Percent");
+            data = "<data>\n" + data + "\n</data>";
+          
+            System.out.println(data);
             // Send data
-            URL url = new URL(HOST_URL + "/" + modName + "/" + key);
+            URL url = new URL(HOST_URL );
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setDoOutput(true);
-            conn.setRequestMethod("PUT");
-            conn.setReadTimeout(10000);
+            conn.setRequestMethod("POST");
+            conn.setReadTimeout(120000);
             wr = new OutputStreamWriter(conn.getOutputStream());
-            wr.write(new com.google.gson.Gson().toJson(jObj));
+            wr.write(data);
             wr.flush();
 
             // Get the response
             is = new InputStreamReader(conn.getInputStream());
             rd = new BufferedReader(is);
-
         } catch (Exception e) {
             System.out.println(this.getClass().getName()
-                    + "SEND DATA ERROR " + modName + " " + key
-                    + " " + jObj.toString() + " " + e.getMessage());
+                    + "SEND DATA ERROR " + e.getMessage());
         } finally {
             if (is != null) {
                 try {
