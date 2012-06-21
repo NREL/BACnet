@@ -118,6 +118,7 @@ import com.serotonin.bacnet4j.exception.BACnetException;
 import java.sql.Timestamp;
 import java.util.Date;
 
+import org.apache.commons.cli.*;
 
 public class Scan {
   static class MyExceptionListener extends DefaultExceptionListener {  
@@ -255,8 +256,7 @@ public class Scan {
     {
       m_devices = new LinkedBlockingQueue<RemoteDevice>();
       m_founddevices = new HashSet<RemoteDevice>();
-      m_logger = Logger.getLogger("Handler");
-      m_logger.setParent(Logger.getLogger("BACnetScanner"));
+      m_logger = Logger.getLogger("BACnetScanner");
     }
 
     @Override
@@ -281,19 +281,17 @@ public class Scan {
     }
   }
 
-  
-
 
   private Logger m_logger;
   private Vector<DeviceFilter> m_filters;
-  private java.net.NetworkInterface m_networkInterface;
   private int m_min;
   private int m_max;
+  private LocalDevice m_localDevice;
 
-  public Scan(java.net.NetworkInterface ni, int min, int max, Vector<DeviceFilter> filters)
+  public Scan(LocalDevice ld, int min, int max, Vector<DeviceFilter> filters)
   {
+    m_localDevice = ld;
     m_logger = Logger.getLogger("BACnetScanner");
-    m_networkInterface = ni;
     m_filters = filters;
     m_min = min;
     m_max = max;
@@ -378,79 +376,232 @@ public class Scan {
 
 
   public static void main(String[] args) throws Exception {
-    Vector<DeviceFilter> filters = null; 
+
+    CommandLineParser parser = new PosixParser();
+    Options options = new Options();
+    options.addOption("m", "min-device-id", true, "Minimum device ID to scan for, default is -1, or 0 if only a max is specified");
+    options.addOption("M", "max-device-id", true, "Maximum device ID to scan for, default is -1");
+    options.addOption("D", "device-id", true, "device ID to scan, exclusive of min-device-id and max-device-id");
+    options.addOption("f", "filter", true, "JSON filter file to use during scanning");
+    options.addOption("d", "dev", true, "Device to use for broadcasts, default is eth0");
+    options.addOption("e", "example-file", true, "Write an example JSON filter file out and exit");
+    options.addOption("s", "scan", false, "Enable scanning feature");
+    options.addOption("S", "slave-device", false, "Enable slave device feature");
+    options.addOption("n", "num-scans", true, "Number of scans to perform, default is 1, -1 scans indefinitely");
+    options.addOption("t", "time-between-scans", true, "Amount of time (in ms) to wait between finishing one scan and starting another. Default is 10000ms");
+
+
     int min = -1;
     int max = -1;
+    int time_between_scans = 10000;
+    int num_scans = 1;
 
-    if (args.length < 1)
-    {
-      System.out.println("Usage: <ethernetdevice> [mindeviceid] [maxdeviceid] [jsonfilterdefinitionfile]\n");
+    String devname = null;
+    Vector<DeviceFilter> filters = null; 
+
+    boolean scan = false;
+    boolean slave_device = false;
+
+    try {
+      CommandLine line = parser.parse(options, args);
+
+      if (line.hasOption("e"))
+      {
+        System.out.println("Writing example JSON filter file to: " + line.getOptionValue("e"));
+
+        java.io.FileOutputStream jsonfile = null;
+        java.io.PrintWriter jsonw = null;
+
+        try {
+          jsonfile = new java.io.FileOutputStream(line.getOptionValue("e"));
+        } catch (Exception e) {
+          System.out.println("Error writing example JSON file");
+          System.exit(-1);
+        }
+
+        if (jsonfile != null)
+        {
+          jsonw = new java.io.PrintWriter(jsonfile, true);
+          com.google.gson.Gson gson = new com.google.gson.Gson();
+          Vector<DeviceFilter> examplefilters = new Vector<DeviceFilter>();
+          DeviceFilter f = new DeviceFilter();
+          f.instanceNumber = ".*";
+          f.networkNumber = ".*";
+          f.macAddress = ".*";
+          f.networkAddress = ".*";
+
+          OIDFilter of = new OIDFilter();
+          of.objectType = "Binary .*";
+          of.instanceNumber = "1.*";
+          f.oidFilters = new Vector<OIDFilter>();
+          f.oidFilters.add(of);
+          examplefilters.add(f);
+          jsonw.println(gson.toJson(examplefilters));
+        }
+
+        System.exit(0);
+      }
+
+      time_between_scans = Integer.parseInt(line.getOptionValue("t", "10000"));
+      num_scans = Integer.parseInt(line.getOptionValue("n", "1"));
+      scan = line.hasOption("s");
+      slave_device = line.hasOption("S");
+
+      min = Integer.parseInt(line.getOptionValue("m", "-1")); 
+      max = min;
+
+      max = Integer.parseInt(line.getOptionValue("M", "-1"));
+
+      if (min == -1 && max > -1)
+      {
+        min = 0;
+      }
+
+      if (line.hasOption("m") && !line.hasOption("M"))
+      {
+        HelpFormatter hp = new HelpFormatter();
+        hp.printHelp("Syntax:", "Error: a max-device-id must be specified if a min-device-id is specified", options, "", true);
+        System.exit(-1);
+      }
+
+      if (max < min)
+      {
+        HelpFormatter hp = new HelpFormatter();
+        hp.printHelp("Syntax:", "Error: max-device-id cannot be less than min-device-id", options, "", true);
+        System.exit(-1);
+      }
+
+      if (line.hasOption("D") && (line.hasOption("m") || line.hasOption("M")))
+      {
+        HelpFormatter hp = new HelpFormatter();
+        hp.printHelp("Syntax:", "Error: you cannot specify both a specific device-id and a min-device-id or max-device-id", options, "", true);
+        System.exit(-1);
+      }
+
+      if (line.hasOption("f"))
+      {
+        System.out.println("Loading JSON filter file: " + line.getOptionValue("f"));
+        String filterfile = readFile(line.getOptionValue("f"), Charset.forName("US-ASCII"));
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+
+        java.lang.reflect.Type vectortype 
+          = new com.google.gson.reflect.TypeToken<Vector<DeviceFilter>>() {}.getType();
+        filters = gson.fromJson(filterfile, vectortype);
+      }
+
+      devname = line.getOptionValue("dev", "eth0");
+    } catch (ParseException e) {
+      HelpFormatter hp = new HelpFormatter();
+      hp.printHelp("Syntax:", options, true);
       System.exit(-1);
     }
+
+
+    Logger logger = Logger.getLogger("BACnetScanner");
+
+    try {
+      FileHandler fh = new FileHandler("LogFile.log", true);
+      logger.addHandler(fh);
+      SimpleFormatter formatter = new SimpleFormatter();
+      fh.setFormatter(formatter);
+    } catch (Exception e) {
+      logger.log(Level.SEVERE, "Unable to create log file", e);
+    }
+
+    logger.setLevel(Level.ALL);
+
+
+
 
     NetworkInterface networkinterface = null;
-   
+  
     try {
-      networkinterface = java.net.NetworkInterface.getByName(args[0]);
+      networkinterface = java.net.NetworkInterface.getByName(devname);
     } catch (Exception ex) {
-      System.out.println("Unable to open device: " + args[0]);
+      System.out.println("Unable to open device: " + devname);
       System.exit(-1);
     }
 
-    if (args.length > 1)
-    {
-      min = Integer.parseInt(args[1]); 
-      max = min;
-    }
 
-    if (args.length > 2)
-    {
-      max = Integer.parseInt(args[2]);
-    }
+    List<InterfaceAddress> addresses = networkinterface.getInterfaceAddresses();
 
-    if (args.length > 3)
-    {
-      String filterfile = readFile(args[3], Charset.forName("US-ASCII"));
-      com.google.gson.Gson gson = new com.google.gson.Gson();
+    String sbroadcast = null;
+    String saddress = null;
+    InterfaceAddress ifaceaddr = null;
 
-      java.lang.reflect.Type vectortype 
-        = new com.google.gson.reflect.TypeToken<Vector<DeviceFilter>>() {}.getType();
-      filters = gson.fromJson(filterfile, vectortype);
-    } else {
-      /*
-      java.io.FileOutputStream jsonfile = null;
-      java.io.PrintWriter jsonw = null;
-      try {
-        jsonfile = new java.io.FileOutputStream("ExampleFilter.json");
-      } catch (Exception e) {
-      }
-
-      if (jsonfile != null)
+    for (InterfaceAddress address: addresses) {
+      logger.fine("Evaluating address: " + address.toString());
+      if (address.getAddress().getAddress().length == 4)
       {
-        jsonw = new java.io.PrintWriter(jsonfile, true);
-        com.google.gson.Gson gson = new com.google.gson.Gson();
-        Vector<DeviceFilter> examplefilters = new Vector<DeviceFilter>();
-        DeviceFilter f = new DeviceFilter();
-        f.instanceNumber = ".*";
-        f.networkNumber = ".*";
-        f.macAddress = ".*";
-        f.networkAddress = ".*";
-
-        OIDFilter of = new OIDFilter();
-        of.objectType = "Binary .*";
-        of.instanceNumber = "1.*";
-        f.oidFilters = new Vector<OIDFilter>();
-        f.oidFilters.add(of);
-        examplefilters.add(f);
-        jsonw.println(gson.toJson(examplefilters));
+        logger.info("Address is ipv4, selecting: " + address.toString());
+        sbroadcast = address.getBroadcast().toString().substring(1);
+        saddress = address.getAddress().toString().substring(1);
+        ifaceaddr = address;
+        break;
+      } else {
+        logger.info("Address is not ipv4, not selecting: " + address.toString());
       }
-      */
+    }
+
+    logger.info("Binding to: " + saddress + " " + sbroadcast);
+
+    logger.severe("We cannot bind to the specific interface, bacnet4j doesn't work when we do");
+ 
+      
+    LocalDevice localDevice = new LocalDevice(1234, sbroadcast);
+    localDevice.setPort(LocalDevice.DEFAULT_PORT);
+    localDevice.setTimeout(localDevice.getTimeout() * 3);
+    localDevice.setSegTimeout(localDevice.getSegTimeout() * 3);
+    try {
+      localDevice.initialize();
+    }
+    catch (IOException e) {
+      e.printStackTrace();
+      return;
+    }    
+ 
+    Scan s = null;
+     
+    if (scan)
+    {
+      logger.info("Creating scanner object");
+      s = new Scan(localDevice, min, max, filters);
+    }
+
+    SlaveDevice sd = null;
+
+    if (slave_device)
+    {
+      logger.info("Creating slave device object");
+      sd = new SlaveDevice(localDevice);
     }
 
 
+    for (int i=0; i < num_scans || num_scans == -1; ++i)
+    {
+      logger.info("Beginning scan " + (i+1) + " of " + num_scans);
 
-    Scan s = new Scan(networkinterface, min, max, filters);
-    s.run();
+      if (s != null)
+      {
+        s.run();
+      }
+
+      logger.info("Sleeping until next scan: " + time_between_scans + " ms");
+      Thread.sleep(time_between_scans);
+    }
+
+    logger.info("Scanning complete");
+
+    // keep running if we have a slave_device
+    while (slave_device)
+    {
+      logger.info("keeping slave device alive");
+      Thread.sleep(5000);
+    }
+
+    logger.info("Shutting down");
+    localDevice.terminate();
+
   }
 
   static class TrendLogData
@@ -699,15 +850,10 @@ public class Scan {
     return false;
   }
 
-  private void broadcastWhois(LocalDevice localDevice, int low, int high)
+  private void broadcastWhois(LocalDevice t_localDevice, int low, int high)
   {
-    byte[] ip = new byte[4];
-    ip[0] = (byte) 192; // A
-    ip[1] = (byte) 168; // B
-    ip[2] = (byte) 2; // C
-    ip[3] = (byte) 0; // D
-
     WhoIsRequest whois;
+
     if (low == -1 && high == -1)
     {
       whois = new WhoIsRequest();
@@ -730,82 +876,49 @@ public class Scan {
       whois = new WhoIsRequest(new UnsignedInteger(low), new UnsignedInteger(high));
     }
 
-    while (true) {
-      String ipstr = IpAddressUtils.toIpString(ip);
-      localDevice.setBroadcastAddress(ipstr);
+    try {
+      t_localDevice.sendBroadcast(whois);
+    } catch (BACnetException e) {
+      m_logger.log(Level.WARNING, "Exception occured with broadcast", e);
+    }
+
+    /*
+    InetAddress curaddr = startAddress(m_ifaceAddr);
+    InetAddress end = endAddress(m_ifaceAddr);
+    while (lessThan(curaddr, end)) {
+      String ipstr = curaddr.getHostAddress();
+      t_localDevice.setBroadcastAddress(ipstr);
       m_logger.fine("Scanning IP: " + ipstr);
       try {
-        localDevice.sendBroadcast(whois);
+        t_localDevice.sendBroadcast(whois);
       }
       catch (BACnetException e) {
         m_logger.log(Level.WARNING, "Exception occured with ip " + ipstr, e);
       }
 
       try {
-        increment(ip);
+        increment(curaddr);
       }
       catch (Exception e) {
         m_logger.info("Done pinging devices");
         break;
       }
     }
+*/
+    
 
   }
 
   private void run() {
-    try {
-      FileHandler fh = new FileHandler("LogFile.log", true);
-      m_logger.addHandler(fh);
-      SimpleFormatter formatter = new SimpleFormatter();
-      fh.setFormatter(formatter);
-    } catch (Exception e) {
-      m_logger.log(Level.SEVERE, "Unable to create log file", e);
-    }
-
-    m_logger.setLevel(Level.ALL);
-
     m_logger.info("Scanning device ids: " + m_min + " to " + m_max);
 
-    List<InterfaceAddress> addresses = m_networkInterface.getInterfaceAddresses();
-
-    String sbroadcast = null;
-    String saddress = null;
-
-    for (InterfaceAddress address: addresses) {
-      m_logger.fine("Evaluating address: " + address.toString());
-      if (address.getAddress().getAddress().length == 4)
-      {
-        m_logger.info("Address is ipv4, selecting: " + address.toString());
-        sbroadcast = address.getBroadcast().toString().substring(1);
-        saddress = address.getAddress().toString().substring(1);
-        break;
-      } else {
-        m_logger.info("Address is not ipv4, not selecting: " + address.toString());
-      }
-    }
-
-    m_logger.info("Binding to: " + saddress + " " + sbroadcast);
-
-    m_logger.severe("We cannot bind to the specific interface, bacnet4j doesn't work when we do");
-    LocalDevice localDevice = new LocalDevice(1234, sbroadcast);
-    localDevice.setPort(LocalDevice.DEFAULT_PORT);
-    localDevice.setTimeout(localDevice.getTimeout() * 3);
-    localDevice.setSegTimeout(localDevice.getSegTimeout() * 3);
+  
     Handler h = new Handler();
-    localDevice.getEventHandler().addListener(h);
-    localDevice.setExceptionListener(new MyExceptionListener());
-    try {
-      localDevice.initialize();
-    }
-    catch (IOException e) {
-      e.printStackTrace();
-      return;
-    }
+    m_localDevice.getEventHandler().addListener(h);
+    m_localDevice.setExceptionListener(new MyExceptionListener());
 
-    /// let's act as a slave device while we are up and running
-    // SlaveDevice sd = new SlaveDevice(localDevice);
 
-    broadcastWhois(localDevice, m_min, m_max);
+    broadcastWhois(m_localDevice, m_min, m_max);
 
     BlockingQueue<RemoteDevice> remoteDevices = h.remoteDevices();
 
@@ -855,16 +968,16 @@ public class Scan {
         int min = rd.getInstanceNumber() - 500;
         int max = rd.getInstanceNumber() + 500;
 
-        broadcastWhois(localDevice, min, max);
+        broadcastWhois(m_localDevice, min, max);
 
 
         if (deviceMatches(rd, m_filters))
         {
           m_logger.info("Getting device info: " + rd);
-          localDevice.getExtendedDeviceInformation(rd);
+          m_localDevice.getExtendedDeviceInformation(rd);
 
           @SuppressWarnings("unchecked")
-            List<ObjectIdentifier> oids = ((SequenceOf<ObjectIdentifier>) localDevice.sendReadPropertyAllowNull(rd, rd.getObjectIdentifier(), PropertyIdentifier.objectList)).getValues();
+            List<ObjectIdentifier> oids = ((SequenceOf<ObjectIdentifier>) m_localDevice.sendReadPropertyAllowNull(rd, rd.getObjectIdentifier(), PropertyIdentifier.objectList)).getValues();
 
           m_logger.info("Getting device info: " + rd);
           m_logger.fine("Oids found: " + Integer.toString(oids.size()));
@@ -900,7 +1013,7 @@ public class Scan {
 
           PropertyValues pvs; 
           try {
-            pvs = localDevice.readProperties(rd, refs);
+            pvs = m_localDevice.readProperties(rd, refs);
             m_logger.fine(String.format("Properties read done in %d ms", System.currentTimeMillis() - start));
           } catch (BACnetException e) {
             // let's try breaking it up ourselves if it fails
@@ -909,7 +1022,7 @@ public class Scan {
             pvs = new PropertyValues();
             for (PropertyReferences prs: lprs)
             {
-              PropertyValues lpvs = localDevice.readProperties(rd, prs);
+              PropertyValues lpvs = m_localDevice.readProperties(rd, prs);
 
               for (ObjectPropertyReference opr : lpvs)
               {
@@ -920,10 +1033,10 @@ public class Scan {
           }
 
           try {
-            OID parent = buildObject(localDevice, rd, rd.getObjectIdentifier(), pvs);
+            OID parent = buildObject(m_localDevice, rd, rd.getObjectIdentifier(), pvs);
             for (ObjectIdentifier oid : oids) {
               try {
-                OID child = buildObject(localDevice, rd, oid, pvs);
+                OID child = buildObject(m_localDevice, rd, oid, pvs);
                 parent.children.add(child);
               } catch (Exception e) {
                 m_logger.log(Level.SEVERE, "Error creating child object", e);
@@ -962,46 +1075,7 @@ public class Scan {
       System.out.println("could not open file to send: " + e.getMessage());
     }
 
-
-
-    
-    
-    localDevice.terminate();
   }
 
-  private static void increment(byte[] ip) throws Exception {
-    int value = (ip[3] & 0xff) + 1;
-    if (value < 256)
-      ip[3] = (byte) value;
-    else {
-      throw new Exception("done");
-      /*
-      ip[3] = 0;
-      value = (ip[2] & 0xff) + 1;
-      if (value < 256) {
-        ip[2] = (byte) value;
-        // System.out.println("C="+ value);
-      }
-      else {
-        ip[2] = 0;
-        value = (ip[1] & 0xff) + 1;
-        if (value < 256) {
-          ip[1] = (byte) value;
-         System.out.println("B=" + value);
-        }
-        else {
-          ip[1] = 0;
-          value = (ip[0] & 0xff) + 1;
-          if (value < 256) {
-            ip[0] = (byte) value;
-            System.out.println("A=" + value);
-          }
-          else
-             throw new Exception("done");
-        }
-      }
-      */
-    }
-  }
 
 }
