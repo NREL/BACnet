@@ -381,9 +381,10 @@ public class Scan {
     Options options = new Options();
     options.addOption("m", "min-device-id", true, "Minimum device ID to scan for, default is -1, or 0 if only a max is specified");
     options.addOption("M", "max-device-id", true, "Maximum device ID to scan for, default is -1");
+    options.addOption("i", "id", true, "Device ID of this software, default is 1234");
     options.addOption("D", "device-id", true, "device ID to scan, exclusive of min-device-id and max-device-id");
     options.addOption("f", "filter", true, "JSON filter file to use during scanning");
-    options.addOption("d", "dev", true, "Device to use for broadcasts, default is eth0");
+    options.addOption("d", "dev", true, "Network device to use for broadcasts, default is eth0");
     options.addOption("e", "example-file", true, "Write an example JSON filter file out and exit");
     options.addOption("s", "scan", false, "Enable scanning feature");
     options.addOption("S", "slave-device", false, "Enable slave device feature");
@@ -395,6 +396,7 @@ public class Scan {
     int max = -1;
     int time_between_scans = 10000;
     int num_scans = 1;
+    int device_id = 1234;
 
     String devname = null;
     Vector<DeviceFilter> filters = null; 
@@ -444,6 +446,7 @@ public class Scan {
 
       time_between_scans = Integer.parseInt(line.getOptionValue("t", "10000"));
       num_scans = Integer.parseInt(line.getOptionValue("n", "1"));
+      device_id = Integer.parseInt(line.getOptionValue("i", "1234"));
       scan = line.hasOption("s");
       slave_device = line.hasOption("S");
 
@@ -476,6 +479,11 @@ public class Scan {
         HelpFormatter hp = new HelpFormatter();
         hp.printHelp("Syntax:", "Error: you cannot specify both a specific device-id and a min-device-id or max-device-id", options, "", true);
         System.exit(-1);
+      }
+
+      if (line.hasOption("D"))
+      {
+        min = max = Integer.parseInt(line.getOptionValue("D"));
       }
 
       if (line.hasOption("f"))
@@ -543,12 +551,13 @@ public class Scan {
       }
     }
 
+    logger.info("Vendor ID is hardcoded by bacnet4j to serotonin's (236) it should be possible to change it if necessary");
     logger.info("Binding to: " + saddress + " " + sbroadcast);
 
     logger.severe("We cannot bind to the specific interface, bacnet4j doesn't work when we do");
  
       
-    LocalDevice localDevice = new LocalDevice(1234, sbroadcast);
+    LocalDevice localDevice = new LocalDevice(device_id, sbroadcast);
     localDevice.setPort(LocalDevice.DEFAULT_PORT);
     localDevice.setTimeout(localDevice.getTimeout() * 3);
     localDevice.setSegTimeout(localDevice.getSegTimeout() * 3);
@@ -577,7 +586,7 @@ public class Scan {
     }
 
 
-    for (int i=0; i < num_scans || num_scans == -1; ++i)
+    for (int i=0; s!=null && i < num_scans || num_scans == -1; ++i)
     {
       logger.info("Beginning scan " + (i+1) + " of " + num_scans);
 
