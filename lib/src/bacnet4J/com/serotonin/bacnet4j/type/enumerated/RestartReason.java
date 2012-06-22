@@ -17,6 +17,11 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j.type.enumerated;
 
@@ -33,6 +38,9 @@ public class RestartReason extends Enumerated {
     public static final RestartReason hardwareWatchdog = new RestartReason(5);
     public static final RestartReason softwareWatchdog = new RestartReason(6);
     public static final RestartReason suspended = new RestartReason(7);
+
+    public static final RestartReason[] ALL = { unknown, coldstart, warmstart, detectedPowerLost, detectedPoweredOff,
+            hardwareWatchdog, softwareWatchdog, suspended, };
 
     public RestartReason(int value) {
         super(value);

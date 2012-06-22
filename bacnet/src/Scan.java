@@ -28,6 +28,8 @@ import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.BufferedInputStream;
+import java.io.InputStream;
 
 import java.net.NetworkInterface;
 import java.net.InterfaceAddress;
@@ -135,115 +137,188 @@ public class Scan {
   }
 
   static class SlaveDevice {
-    private BACnetObject ai0;
-    private BACnetObject ai1;
-    private BACnetObject bi0;
-    private BACnetObject bi1;
-
-    private BACnetObject mso0;
-    private BACnetObject ao0;
-    private BACnetObject av0;
-    private FileObject file0;
-    private BACnetObject bv1;
-
-    public SlaveDevice(LocalDevice ld)
+    class ObjectSource
     {
+      public BACnetObject object;
+      public String source;
+    }
+
+    private Vector<ObjectSource> m_objects;
+    Logger m_logger;
+
+    EngineeringUnits stringToUnits(String value) throws java.text.ParseException
+    {
+      for (EngineeringUnits units : EngineeringUnits.ALL)
+      {
+        if (units.toString().equalsIgnoreCase(value))
+        {
+          return units;
+        }
+      }
+
+      throw new java.text.ParseException("Unknown Units Type: " + value, 0);
+    }
+
+    ObjectType stringToType(String value) throws java.text.ParseException
+    {
+      for (ObjectType type : ObjectType.ALL)
+      {
+        if (type.toString().equalsIgnoreCase(value))
+        {
+          return type;
+        }
+      }
+
+      throw new java.text.ParseException("Unknown Object Type: " + value, 0);
+    }
+
+    public SlaveDevice(LocalDevice ld, Vector<OIDValue> values)
+    {
+      m_logger = Logger.getLogger("BACnetScanner");
+      m_objects = new Vector<ObjectSource>();
+
       try {
         ld.getConfiguration().setProperty(PropertyIdentifier.objectName,
-            new CharacterString("BACnet4J slave device test"));
-        ld.getConfiguration().setProperty(PropertyIdentifier.vendorIdentifier,
-            new Unsigned16(513));
+            new CharacterString("BuildingAgent Slave Device"));
+//        ld.getConfiguration().setProperty(PropertyIdentifier.vendorIdentifier,
+//            new Unsigned16(513));
         ld.getConfiguration().setProperty(PropertyIdentifier.segmentationSupported,
             Segmentation.segmentedBoth);
 
-        // Set up a few objects.
-        ai0 = new BACnetObject(ld,
-            ld.getNextInstanceObjectIdentifier(ObjectType.analogInput));
-        ai0.setProperty(PropertyIdentifier.units, EngineeringUnits.centimeters);
-        ld.addObject(ai0);
+        for (OIDValue value : values)
+        {
+          try {
+            ObjectType ot = stringToType(value.objectType);
 
-        ai1 = new BACnetObject(ld,
-            ld.getNextInstanceObjectIdentifier(ObjectType.analogInput));
-        ai1.setProperty(PropertyIdentifier.units, EngineeringUnits.percentObscurationPerFoot);
-        ld.addObject(ai1);
-
-        bi0 = new BACnetObject(ld,
-            ld.getNextInstanceObjectIdentifier(ObjectType.binaryInput));
-        ld.addObject(bi0);
-        bi0.setProperty(PropertyIdentifier.objectName, new CharacterString("Off and on"));
-        bi0.setProperty(PropertyIdentifier.inactiveText, new CharacterString("Off"));
-        bi0.setProperty(PropertyIdentifier.activeText, new CharacterString("On"));
-
-        bi1 = new BACnetObject(ld,
-            ld.getNextInstanceObjectIdentifier(ObjectType.binaryInput));
-        ld.addObject(bi1);
-        bi1.setProperty(PropertyIdentifier.objectName, new CharacterString("Good and bad"));
-        bi1.setProperty(PropertyIdentifier.inactiveText, new CharacterString("Bad"));
-        bi1.setProperty(PropertyIdentifier.activeText, new CharacterString("Good"));
-
-        mso0 = new BACnetObject(ld,
-            ld.getNextInstanceObjectIdentifier(ObjectType.multiStateOutput));
-        mso0.setProperty(PropertyIdentifier.objectName, new CharacterString("Vegetable"));
-        mso0.setProperty(PropertyIdentifier.numberOfStates, new UnsignedInteger(4));
-        mso0.setProperty(PropertyIdentifier.stateText, 1, new CharacterString("Tomato"));
-        mso0.setProperty(PropertyIdentifier.stateText, 2, new CharacterString("Potato"));
-        mso0.setProperty(PropertyIdentifier.stateText, 3, new CharacterString("Onion"));
-        mso0.setProperty(PropertyIdentifier.stateText, 4, new CharacterString("Broccoli"));
-        mso0.setProperty(PropertyIdentifier.presentValue, new UnsignedInteger(1));
-        ld.addObject(mso0);
-
-        ao0 = new BACnetObject(ld,
-            ld.getNextInstanceObjectIdentifier(ObjectType.analogOutput));
-        ao0.setProperty(PropertyIdentifier.objectName, new CharacterString("Settable analog"));
-        ld.addObject(ao0);
-
-        av0 = new BACnetObject(ld,
-            ld.getNextInstanceObjectIdentifier(ObjectType.analogValue));
-        av0.setProperty(PropertyIdentifier.objectName, new CharacterString("Command Priority Test"));
-        av0.setProperty(PropertyIdentifier.relinquishDefault, new Real(3.1415F));
-        ld.addObject(av0);
-
-        file0 = new FileObject(ld, ld.getNextInstanceObjectIdentifier(ObjectType.file),
-            new File("testFile.txt"), FileAccessMethod.streamAccess);
-        file0.setProperty(PropertyIdentifier.fileType, new CharacterString("aTestFile"));
-        file0.setProperty(PropertyIdentifier.archive, new Boolean(false));
-        ld.addObject(file0);
-
-        bv1 = new BACnetObject(ld,
-            ld.getNextInstanceObjectIdentifier(ObjectType.binaryValue));
-        bv1.setProperty(PropertyIdentifier.objectName, new CharacterString("A binary value"));
-        bv1.setProperty(PropertyIdentifier.inactiveText, new CharacterString("Down"));
-        bv1.setProperty(PropertyIdentifier.activeText, new CharacterString("Up"));
-        ld.addObject(bv1);
+            BACnetObject o = new BACnetObject(ld, ld.getNextInstanceObjectIdentifier(ot));
+            o.setProperty(PropertyIdentifier.objectName, new CharacterString(value.objectName));
+            ld.addObject(o);
+            ObjectSource os = new ObjectSource();
+            os.object = o;
+            os.source = value.objectSource;
+            m_objects.add(os);
+            m_logger.info("Created new bacnet object: " + value.objectName);
+          } catch (java.text.ParseException e) {
+            m_logger.log(Level.SEVERE, "Error with creating new bacnet object", e);
+          }
+        }
       } catch (java.lang.Exception e) {
       }
-
     } 
+
+    String executeCommand(String cmd)
+    {
+      Runtime r = Runtime.getRuntime();
+
+      String returnval = "";
+
+      try {
+        m_logger.fine("Executing command: " + cmd);
+        Process p = r.exec(cmd);
+        InputStream in = p.getInputStream();
+        BufferedInputStream buf = new BufferedInputStream(in);
+        InputStreamReader inread = new InputStreamReader(buf);
+        BufferedReader bufferedreader = new BufferedReader(inread);
+
+        // Read the ls output
+        String line;
+        while ((line = bufferedreader.readLine()) != null) {
+          returnval += line + "\n";
+        }
+
+        try {
+          if (p.waitFor() != 0) {
+            m_logger.severe("Error executing process: " + p.exitValue());
+          }
+        } catch (InterruptedException e) {
+          m_logger.log(Level.SEVERE, "Error executing process: ", e);
+        } finally {
+          // Close the InputStream
+          bufferedreader.close();
+          inread.close();
+          buf.close();
+          in.close();
+        }
+      } catch (IOException e) {
+        m_logger.log(Level.SEVERE, "Error executing process: ", e);
+      }
+
+      return returnval;
+    }
 
     public void updateValues()
     {
-      float ai0value = 0;
-      float ai1value = 0;
-      boolean bi0value = false;
-      boolean bi1value = false;
+      for (ObjectSource os : m_objects)
+      {
+        try {
+          String output = executeCommand(os.source);
+          m_logger.info("Parsing result value: " + output);
 
-      try {
-        mso0.setProperty(PropertyIdentifier.presentValue, new UnsignedInteger(2));
+          com.google.gson.Gson gson = new com.google.gson.Gson();
 
-        // Change the values.
-        ai0value += 0.1;
-        ai1value += 0.7;
-        bi0value = !bi0value;
-        bi1value = !bi1value;
+          java.lang.reflect.Type valuetype 
+            = new com.google.gson.reflect.TypeToken<OIDValueResponse>() {}.getType();
+          OIDValueResponse response = gson.fromJson(output, valuetype);
 
-        // Update the values in the objects.
-        ai0.setProperty(PropertyIdentifier.presentValue, new Real(ai0value));
-        ai1.setProperty(PropertyIdentifier.presentValue, new Real(ai1value));
-        bi0.setProperty(PropertyIdentifier.presentValue, bi0value ? BinaryPV.active : BinaryPV.inactive);
-        bi1.setProperty(PropertyIdentifier.presentValue, bi1value ? BinaryPV.active : BinaryPV.inactive);
-      } catch (java.lang.Exception e) {
+          if (response.units != null && !response.units.equals(""))
+          {
+            os.object.setProperty(PropertyIdentifier.units, stringToUnits(response.units));
+          }
+
+          boolean somethingstuck = false;
+
+          // try until we find something that sticks
+          try {
+            int v = Integer.parseInt(response.value);
+            os.object.setProperty(PropertyIdentifier.presentValue, new com.serotonin.bacnet4j.type.primitive.UnsignedInteger(v));
+            somethingstuck = true;
+          } catch (Exception e) { }
+
+          try {
+            int v = Integer.parseInt(response.value);
+            os.object.setProperty(PropertyIdentifier.presentValue, new com.serotonin.bacnet4j.type.primitive.SignedInteger(v));
+            somethingstuck = true;
+          } catch (Exception e) { }
+
+          try {
+            boolean v = java.lang.Boolean.getBoolean(response.value);
+            os.object.setProperty(PropertyIdentifier.presentValue, new com.serotonin.bacnet4j.type.primitive.Boolean(v));
+            somethingstuck = true;
+          } catch (Exception e) { }
+
+          try {
+            boolean v = java.lang.Boolean.getBoolean(response.value);
+            os.object.setProperty(PropertyIdentifier.presentValue, v ? BinaryPV.active : BinaryPV.inactive);
+            somethingstuck = true;
+          } catch (Exception e) { }
+
+
+
+          try {
+            float v = Float.parseFloat(response.value);
+            os.object.setProperty(PropertyIdentifier.presentValue, new com.serotonin.bacnet4j.type.primitive.Real(v));
+            somethingstuck = true;
+          } catch (Exception e) { }
+
+          try {
+            double v = Double.parseDouble(response.value);
+            os.object.setProperty(PropertyIdentifier.presentValue, new com.serotonin.bacnet4j.type.primitive.Double(v));
+            somethingstuck = true;
+          } catch (Exception e) { }
+
+          try {
+            os.object.setProperty(PropertyIdentifier.presentValue, new com.serotonin.bacnet4j.type.primitive.CharacterString(response.value));
+            somethingstuck = true;
+          } catch (Exception e) { }
+
+          if (!somethingstuck)
+          {
+            throw new Exception("Unknown / unexpected type of data");
+          }
+        } catch (Exception e) {
+          m_logger.log(Level.SEVERE, "Error updating value", e);
+        }
       }
-
     }   
   } 
 
@@ -334,6 +409,18 @@ public class Scan {
     }
   }
 
+  static class OIDValue {
+    String objectName;
+    String objectType;
+    String objectSource;
+  }
+
+  static class OIDValueResponse {
+    String value;
+    String timeStamp;
+    String units;
+  }
+
   static class DeviceFilter {
     String instanceNumber;
     String networkNumber;
@@ -383,23 +470,26 @@ public class Scan {
     options.addOption("M", "max-device-id", true, "Maximum device ID to scan for, default is -1");
     options.addOption("i", "id", true, "Device ID of this software, default is 1234");
     options.addOption("D", "device-id", true, "device ID to scan, exclusive of min-device-id and max-device-id");
-    options.addOption("f", "filter", true, "JSON filter file to use during scanning");
+    options.addOption("f", "filter-file", true, "JSON filter file to use during scanning");
     options.addOption("d", "dev", true, "Network device to use for broadcasts, default is eth0");
-    options.addOption("e", "example-file", true, "Write an example JSON filter file out and exit");
+    options.addOption("e", "example-filter-file", true, "Write an example JSON filter file out and exit, with the given filename");
     options.addOption("s", "scan", false, "Enable scanning feature");
     options.addOption("S", "slave-device", false, "Enable slave device feature");
     options.addOption("n", "num-scans", true, "Number of scans to perform, default is 1, -1 scans indefinitely");
-    options.addOption("t", "time-between-scans", true, "Amount of time (in ms) to wait between finishing one scan and starting another. Default is 10000ms");
-
+    options.addOption("t", "time-between-updates", true, "Amount of time (in ms) to wait between finishing one scan and starting another. This time is also used for the update interval for the slave device values. Default is 10000ms");
+    options.addOption("F", "oid-file", true, "JSON oid file to use for the slave device configuration");
+    options.addOption("E", "example-oid-file", true, "Write an example JSON oid input file out and exit, with the given filename");
 
     int min = -1;
     int max = -1;
-    int time_between_scans = 10000;
+    int time_between_updates = 10000;
     int num_scans = 1;
     int device_id = 1234;
 
     String devname = null;
     Vector<DeviceFilter> filters = null; 
+    Vector<OIDValue> oidvalues = null; 
+
 
     boolean scan = false;
     boolean slave_device = false;
@@ -440,11 +530,52 @@ public class Scan {
           examplefilters.add(f);
           jsonw.println(gson.toJson(examplefilters));
         }
+      }
 
+
+      if (line.hasOption("E"))
+      {
+        System.out.println("Writing example JSON oid file to: " + line.getOptionValue("E"));
+
+        java.io.FileOutputStream jsonfile = null;
+        java.io.PrintWriter jsonw = null;
+
+        try {
+          jsonfile = new java.io.FileOutputStream(line.getOptionValue("E"));
+        } catch (Exception e) {
+          System.out.println("Error writing example JSON oid file");
+          System.exit(-1);
+        }
+
+        if (jsonfile != null)
+        {
+          jsonw = new java.io.PrintWriter(jsonfile, true);
+          com.google.gson.Gson gson = new com.google.gson.Gson();
+          Vector<OIDValue> exampleoids = new Vector<OIDValue>();
+          OIDValue i = new OIDValue();
+          i.objectName = "some_object";
+          i.objectType = "analog input";
+          i.objectSource = "echo {value:\"72.5\", timestamp:\"2012-02-01 12:00:00\", units:\"degrees fahrenheit\"}";
+          exampleoids.add(i);
+
+          OIDValue i2 = new OIDValue();
+          i2.objectName = "some_object 2";
+          i2.objectType = "binary input";
+          i2.objectSource = "echo {value:\"true\", timestamp:\"2012-02-01 12:00:00\", units:\"\"}";
+
+
+          exampleoids.add(i2);
+          jsonw.println(gson.toJson(exampleoids));
+        }
+
+      }
+
+      if (line.hasOption("e") || line.hasOption("E"))
+      {
         System.exit(0);
       }
 
-      time_between_scans = Integer.parseInt(line.getOptionValue("t", "10000"));
+      time_between_updates = Integer.parseInt(line.getOptionValue("t", "10000"));
       num_scans = Integer.parseInt(line.getOptionValue("n", "1"));
       device_id = Integer.parseInt(line.getOptionValue("i", "1234"));
       scan = line.hasOption("s");
@@ -497,8 +628,19 @@ public class Scan {
         filters = gson.fromJson(filterfile, vectortype);
       }
 
+      if (line.hasOption("F"))
+      {
+        System.out.println("Loading JSON oid file: " + line.getOptionValue("F"));
+        String filterfile = readFile(line.getOptionValue("F"), Charset.forName("US-ASCII"));
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+
+        java.lang.reflect.Type vectortype 
+          = new com.google.gson.reflect.TypeToken<Vector<OIDValue>>() {}.getType();
+        oidvalues = gson.fromJson(filterfile, vectortype);
+      }
+
       devname = line.getOptionValue("dev", "eth0");
-    } catch (ParseException e) {
+    } catch (Exception e) {
       HelpFormatter hp = new HelpFormatter();
       hp.printHelp("Syntax:", options, true);
       System.exit(-1);
@@ -582,7 +724,7 @@ public class Scan {
     if (slave_device)
     {
       logger.info("Creating slave device object");
-      sd = new SlaveDevice(localDevice);
+      sd = new SlaveDevice(localDevice, oidvalues);
     }
 
 
@@ -590,13 +732,15 @@ public class Scan {
     {
       logger.info("Beginning scan " + (i+1) + " of " + num_scans);
 
-      if (s != null)
+      if (slave_device)
       {
-        s.run();
+        sd.updateValues();
       }
 
-      logger.info("Sleeping until next scan: " + time_between_scans + " ms");
-      Thread.sleep(time_between_scans);
+      s.run();
+
+      logger.info("Sleeping until next scan: " + time_between_updates + " ms");
+      Thread.sleep(time_between_updates);
     }
 
     logger.info("Scanning complete");
@@ -606,6 +750,7 @@ public class Scan {
     {
       logger.info("keeping slave device alive");
       Thread.sleep(5000);
+      sd.updateValues();
     }
 
     logger.info("Shutting down");
@@ -728,8 +873,8 @@ public class Scan {
       return lr.getBACnetError().toString();
     } catch (Exception ex) {}
     try {
-      m_logger.fine("trendLogRecord basetype Data: " + lr.getBaseType().toString());
-      return lr.getBaseType().toString();
+      m_logger.fine("trendLogRecord encodable Data: " + lr.getEncodable().toString());
+      return lr.getEncodable().toString();
     } catch (Exception ex) {}
     try {
       m_logger.fine("trendLogRecord statusflags Data: " + lr.getStatusFlags().toString());

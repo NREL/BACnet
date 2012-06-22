@@ -17,15 +17,23 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j.apdu;
 
 import com.serotonin.bacnet4j.enums.MaxApduLength;
 import com.serotonin.bacnet4j.exception.BACnetException;
 import com.serotonin.bacnet4j.service.confirmed.ConfirmedRequestService;
+import com.serotonin.bacnet4j.type.constructed.ServicesSupported;
 import com.serotonin.util.queue.ByteQueue;
 
 public class ConfirmedRequest extends APDU implements Segmentable {
+    private static final long serialVersionUID = -8338535273752015450L;
+
     public static final byte TYPE_ID = 0;
 
     public static int getHeaderSize(boolean segmented) {
@@ -229,7 +237,7 @@ public class ConfirmedRequest extends APDU implements Segmentable {
             queue.push(serviceData);
     }
 
-    ConfirmedRequest(ByteQueue queue) {
+    ConfirmedRequest(ServicesSupported servicesSupported, ByteQueue queue) throws BACnetException {
         byte b = queue.pop();
         segmentedMessage = (b & 8) != 0;
         moreFollows = (b & 4) != 0;
@@ -245,6 +253,8 @@ public class ConfirmedRequest extends APDU implements Segmentable {
         }
         serviceChoice = queue.pop();
         serviceData = new ByteQueue(queue.popAll());
+
+        ConfirmedRequestService.checkConfirmedRequestService(servicesSupported, serviceChoice);
     }
 
     public void parseServiceData() throws BACnetException {

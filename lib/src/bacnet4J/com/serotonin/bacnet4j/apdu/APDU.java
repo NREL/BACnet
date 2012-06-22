@@ -17,23 +17,33 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j.apdu;
 
+import java.io.Serializable;
+
 import com.serotonin.bacnet4j.exception.BACnetException;
 import com.serotonin.bacnet4j.exception.IllegalPduTypeException;
+import com.serotonin.bacnet4j.type.constructed.ServicesSupported;
 import com.serotonin.util.queue.ByteQueue;
 
-abstract public class APDU {
-    public static APDU createAPDU(ByteQueue queue) throws BACnetException {
+abstract public class APDU implements Serializable {
+    private static final long serialVersionUID = -5844093063653180470L;
+
+    public static APDU createAPDU(ServicesSupported services, ByteQueue queue) throws BACnetException {
         // Get the first byte. The 4 high-order bits will tell us the type of PDU this is.
         byte type = queue.peek(0);
         type = (byte) ((type & 0xff) >> 4);
 
         if (type == ConfirmedRequest.TYPE_ID)
-            return new ConfirmedRequest(queue);
+            return new ConfirmedRequest(services, queue);
         if (type == UnconfirmedRequest.TYPE_ID)
-            return new UnconfirmedRequest(queue);
+            return new UnconfirmedRequest(services, queue);
         if (type == SimpleACK.TYPE_ID)
             return new SimpleACK(queue);
         if (type == ComplexACK.TYPE_ID)

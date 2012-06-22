@@ -17,6 +17,11 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j.type.enumerated;
 
@@ -32,6 +37,9 @@ public class VtClass extends Enumerated {
     public static final VtClass dec_vt220 = new VtClass(4);
     public static final VtClass hp_700_94 = new VtClass(5);
     public static final VtClass ibm_3130 = new VtClass(6);
+
+    public static final VtClass[] ALL = { defaultTerminal, ansi_x3_64, dec_vt52, dec_vt100, dec_vt220, hp_700_94,
+            ibm_3130, };
 
     public VtClass(int value) {
         super(value);

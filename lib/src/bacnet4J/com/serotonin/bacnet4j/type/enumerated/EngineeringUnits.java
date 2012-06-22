@@ -17,6 +17,11 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j.type.enumerated;
 
@@ -238,6 +243,38 @@ public class EngineeringUnits extends Enumerated {
     public static final EngineeringUnits squareMetersPerNewton = new EngineeringUnits(185);
     public static final EngineeringUnits wattsPerMeterPerDegreeKelvin = new EngineeringUnits(189);
     public static final EngineeringUnits wattsPerSquareMeterDegreeKelvin = new EngineeringUnits(141);
+
+    public static final EngineeringUnits[] ALL = { squareMeters, squareFeet, milliamperes, amperes, ohms, volts,
+            kilovolts, megavolts, voltAmperes, kilovoltAmperes, megavoltAmperes, voltAmperesReactive,
+            kilovoltAmperesReactive, megavoltAmperesReactive, degreesPhase, powerFactor, joules, kilojoules, wattHours,
+            kilowattHours, btus, therms, tonHours, joulesPerKilogramDryAir, btusPerPoundDryAir, cyclesPerHour,
+            cyclesPerMinute, hertz, gramsOfWaterPerKilogramDryAir, percentRelativeHumidity, millimeters, meters,
+            inches, feet, wattsPerSquareFoot, wattsPerSquareMeter, lumens, luxes, footCandles, kilograms, poundsMass,
+            tons, kilogramsPerSecond, kilogramsPerMinute, kilogramsPerHour, poundsMassPerMinute, poundsMassPerHour,
+            watts, kilowatts, megawatts, btusPerHour, horsepower, tonsRefrigeration, pascals, kilopascals, bars,
+            poundsForcePerSquareInch, centimetersOfWater, inchesOfWater, millimetersOfMercury, centimetersOfMercury,
+            inchesOfMercury, degreesCelsius, degreesKelvin, degreesFahrenheit, degreeDaysCelsius, degreeDaysFahrenheit,
+            years, months, weeks, days, hours, minutes, seconds, metersPerSecond, kilometersPerHour, feetPerSecond,
+            feetPerMinute, milesPerHour, cubicFeet, cubicMeters, imperialGallons, liters, usGallons,
+            cubicFeetPerMinute, cubicMetersPerSecond, imperialGallonsPerMinute, litersPerSecond, litersPerMinute,
+            usGallonsPerMinute, degreesAngular, degreesCelsiusPerHour, degreesCelsiusPerMinute,
+            degreesFahrenheitPerHour, degreesFahrenheitPerMinute, noUnits, partsPerMillion, partsPerBillion, percent,
+            percentPerSecond, perMinute, perSecond, psiPerDegreeFahrenheit, radians, revolutionsPerMinute, currency1,
+            currency2, currency3, currency4, currency5, currency6, currency7, currency8, currency9, currency10,
+            squareInches, squareCentimeters, btusPerPound, centimeters, poundsMassPerSecond, deltaDegreesFahrenheit,
+            deltaDegreesKelvin, kilohms, megohms, millivolts, kilojoulesPerKilogram, megajoules, joulesPerDegreeKelvin,
+            joulesPerKilogramDegreeKelvin, kilohertz, megahertz, perHour, milliwatts, hectopascals, millibars,
+            cubicMetersPerHour, litersPerHour, kilowattHoursPerSquareMeter, kilowattHoursPerSquareFoot,
+            megajoulesPerSquareMeter, megajoulesPerSquareFoot, wattsPerSquareMeterDegreeKelvin, cubicFeetPerSecond,
+            percentObscurationPerFoot, percentObscurationPerMeter, milliohms, megawattHours, kiloBtus, megaBtus,
+            kilojoulesPerKilogramDryAir, megajoulesPerKilogramDryAir, kilojoulesPerDegreeKelvin,
+            megajoulesPerDegreeKelvin, newton, gramsPerSecond, gramsPerMinute, tonsPerHour, kiloBtusPerHour,
+            hundredthsSeconds, milliseconds, newtonMeters, millimetersPerSecond, millimetersPerMinute, metersPerMinute,
+            metersPerHour, cubicMetersPerMinute, metersPerSecondPerSecond, amperesPerMeter, amperesPerSquareMeter,
+            ampereSquareMeters, farads, henrys, ohmMeters, siemens, siemensPerMeter, teslas, voltsPerDegreeKelvin,
+            voltsPerMeter, webers, candelas, candelasPerSquareMeter, degreesKelvinPerHour, degreesKelvinPerMinute,
+            jouleSeconds, radiansPerSecond, squareMetersPerNewton, kilogramsPerCubicMeter, newtonSeconds,
+            newtonsPerMeter, wattsPerMeterPerDegreeKelvin, };
 
     public EngineeringUnits(int value) {
         super(value);
@@ -625,7 +662,7 @@ public class EngineeringUnits extends Enumerated {
         if (type == revolutionsPerMinute.intValue())
             return "revolutions per minute";
         if (type == squareMetersPerNewton.intValue())
-            return "square meters perNewton";
+            return "square meters per Newton";
         if (type == wattsPerMeterPerDegreeKelvin.intValue())
             return "watts per meter per degree kelvin";
         if (type == wattsPerSquareMeterDegreeKelvin.intValue())

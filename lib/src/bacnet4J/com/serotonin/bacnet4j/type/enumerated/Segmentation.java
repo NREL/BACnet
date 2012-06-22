@@ -17,6 +17,11 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j.type.enumerated;
 
@@ -29,6 +34,8 @@ public class Segmentation extends Enumerated {
     public static final Segmentation segmentedTransmit = new Segmentation(1);
     public static final Segmentation segmentedReceive = new Segmentation(2);
     public static final Segmentation noSegmentation = new Segmentation(3);
+
+    public static final Segmentation[] ALL = { segmentedBoth, segmentedTransmit, segmentedReceive, noSegmentation, };
 
     public Segmentation(int value) {
         super(value);

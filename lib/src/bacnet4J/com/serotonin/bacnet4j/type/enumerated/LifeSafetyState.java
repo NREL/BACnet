@@ -17,6 +17,11 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j.type.enumerated;
 
@@ -49,6 +54,10 @@ public class LifeSafetyState extends Enumerated {
     public static final LifeSafetyState generalAlarm = new LifeSafetyState(21);
     public static final LifeSafetyState supervisory = new LifeSafetyState(22);
     public static final LifeSafetyState testSupervisory = new LifeSafetyState(23);
+
+    public static final LifeSafetyState[] ALL = { quiet, preAlarm, alarm, fault, faultPreAlarm, faultAlarm, notReady,
+            active, tamper, testAlarm, testActive, testFault, testFaultAlarm, holdup, duress, tamperAlarm, abnormal,
+            emergencyPower, delayed, blocked, localAlarm, generalAlarm, supervisory, testSupervisory, };
 
     public LifeSafetyState(int value) {
         super(value);

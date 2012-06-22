@@ -17,6 +17,11 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j;
 
@@ -31,6 +36,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.lang3.ObjectUtils;
 
 import com.serotonin.bacnet4j.apdu.Abort;
 import com.serotonin.bacnet4j.apdu.AckAPDU;
@@ -48,6 +58,7 @@ import com.serotonin.bacnet4j.exception.BACnetRuntimeException;
 import com.serotonin.bacnet4j.exception.BACnetServiceException;
 import com.serotonin.bacnet4j.exception.ErrorAPDUException;
 import com.serotonin.bacnet4j.exception.NotImplementedException;
+import com.serotonin.bacnet4j.exception.PropertyValueException;
 import com.serotonin.bacnet4j.exception.RejectAPDUException;
 import com.serotonin.bacnet4j.npdu.RequestHandler;
 import com.serotonin.bacnet4j.npdu.ip.IpMessageControl;
@@ -95,7 +106,6 @@ import com.serotonin.bacnet4j.type.primitive.Unsigned16;
 import com.serotonin.bacnet4j.type.primitive.UnsignedInteger;
 import com.serotonin.bacnet4j.util.PropertyReferences;
 import com.serotonin.bacnet4j.util.PropertyValues;
-import com.serotonin.util.ObjectUtils;
 import com.serotonin.util.Tuple;
 
 /**
@@ -106,7 +116,7 @@ import com.serotonin.util.Tuple;
  * @author mlohbihler
  */
 public class LocalDevice implements RequestHandler {
-    public static final int DEFAULT_PORT = 0xBAC0;
+    public static final int DEFAULT_PORT = 0xBAC0; // == 47808
     private static final int VENDOR_ID = 236; // Serotonin Software
     private static ExceptionListener exceptionListener = new DefaultExceptionListener();
 
@@ -125,6 +135,8 @@ public class LocalDevice implements RequestHandler {
     private final List<BACnetObject> localObjects = new CopyOnWriteArrayList<BACnetObject>();
     private final List<RemoteDevice> remoteDevices = new CopyOnWriteArrayList<RemoteDevice>();
     private boolean initialized;
+    private ExecutorService executorService;
+    private boolean ownsExecutorService;
 
     /**
      * The local password of the device. Used in the ReinitializeDeviceRequest service.
@@ -139,11 +151,16 @@ public class LocalDevice implements RequestHandler {
     private final DeviceEventHandler eventHandler = new DeviceEventHandler();
 
     public LocalDevice(int deviceId, String broadcastAddress) {
-        this(deviceId, broadcastAddress, null);
+        this(deviceId, broadcastAddress, null, 0);
     }
 
     public LocalDevice(int deviceId, String broadcastAddress, String localBindAddress) {
-        messageControl = new IpMessageControl();
+        this(deviceId, broadcastAddress, localBindAddress, 0);
+    }
+
+    public LocalDevice(int deviceId, String broadcastAddress, String localBindAddress, int localNetworkNumber) {
+        messageControl = new IpMessageControl(this);
+        messageControl.setLocalNetworkNumber(localNetworkNumber);
         messageControl.setPort(DEFAULT_PORT);
         if (localBindAddress != null)
             messageControl.setLocalBindAddress(localBindAddress);
@@ -151,13 +168,18 @@ public class LocalDevice implements RequestHandler {
         messageControl.setRequestHandler(this);
 
         try {
-            configuration = new BACnetObject(this, new ObjectIdentifier(ObjectType.device, deviceId));
+            ObjectIdentifier deviceIdentifier = new ObjectIdentifier(ObjectType.device, deviceId);
+
+            configuration = new BACnetObject(this, deviceIdentifier);
             configuration.setProperty(PropertyIdentifier.maxApduLengthAccepted, new UnsignedInteger(1476));
             configuration.setProperty(PropertyIdentifier.vendorIdentifier, new Unsigned16(VENDOR_ID));
             configuration.setProperty(PropertyIdentifier.vendorName, new CharacterString(
                     "Serotonin Software Technologies, Inc."));
             configuration.setProperty(PropertyIdentifier.segmentationSupported, Segmentation.segmentedBoth);
-            configuration.setProperty(PropertyIdentifier.objectList, new SequenceOf<ObjectIdentifier>());
+
+            SequenceOf<ObjectIdentifier> objectList = new SequenceOf<ObjectIdentifier>();
+            objectList.add(deviceIdentifier);
+            configuration.setProperty(PropertyIdentifier.objectList, objectList);
 
             // Set up the supported services indicators. Remove lines as services get implemented.
             ServicesSupported servicesSupported = new ServicesSupported();
@@ -206,16 +228,41 @@ public class LocalDevice implements RequestHandler {
         }
     }
 
+    public void setExecutorService(ExecutorService executorService) {
+        if (initialized)
+            throw new IllegalStateException("Cannot set the executor service. Already initialized");
+        this.executorService = executorService;
+    }
+
     public synchronized void initialize() throws IOException {
-        eventHandler.initialize();
-        messageControl.initialize();
+        if (executorService == null) {
+            executorService = Executors.newCachedThreadPool();
+            ownsExecutorService = true;
+        }
+        else
+            ownsExecutorService = false;
+        eventHandler.initialize(executorService);
+        messageControl.initialize(executorService);
         initialized = true;
     }
 
     public synchronized void terminate() {
         messageControl.terminate();
-        eventHandler.terminate();
         initialized = false;
+
+        if (ownsExecutorService) {
+            ExecutorService temp = executorService;
+            executorService = null;
+            if (temp != null) {
+                temp.shutdown();
+                try {
+                    temp.awaitTermination(3, TimeUnit.SECONDS);
+                }
+                catch (InterruptedException e) {
+                    LocalDevice.getExceptionListener().receivedException(e);
+                }
+            }
+        }
     }
 
     public boolean isInitialized() {
@@ -230,6 +277,7 @@ public class LocalDevice implements RequestHandler {
         return eventHandler;
     }
 
+    //
     //
     // Controller configuration.
     //
@@ -308,9 +356,8 @@ public class LocalDevice implements RequestHandler {
     }
 
     //
-    // /
-    // / Local object management
-    // /
+    //
+    // Local object management
     //
     public BACnetObject getObjectRequired(ObjectIdentifier id) throws BACnetServiceException {
         BACnetObject o = getObject(id);
@@ -404,10 +451,13 @@ public class LocalDevice implements RequestHandler {
         }
     }
 
+    public ServicesSupported getServicesSupported() throws BACnetServiceException {
+        return (ServicesSupported) getConfiguration().getProperty(PropertyIdentifier.protocolServicesSupported);
+    }
+
     //
-    // /
-    // / Message sending
-    // /
+    //
+    // Message sending
     //
     public AcknowledgementService send(RemoteDevice d, ConfirmedRequestService serviceRequest) throws BACnetException {
         return send(d.getAddress(), d.getNetwork(), d.getMaxAPDULengthAccepted(), d.getSegmentationSupported(),
@@ -417,7 +467,7 @@ public class LocalDevice implements RequestHandler {
     public AcknowledgementService send(Address address, Network network, int maxAPDULengthAccepted,
             Segmentation segmentationSupported, ConfirmedRequestService serviceRequest) throws BACnetException {
         try {
-            return send(new InetSocketAddress(address.getInetAddress(), address.getPort()), network,
+            return send(getCachedRemoteInetSocketAddress(address.getInetAddress(), address.getPort()), network,
                     maxAPDULengthAccepted, segmentationSupported, serviceRequest);
         }
         catch (UnknownHostException e) {
@@ -479,10 +529,23 @@ public class LocalDevice implements RequestHandler {
         messageControl.sendBroadcast(port, network, serviceRequest);
     }
 
+    /**
+     * Sends a foreign device registration request to addr. On successful registration (AKN), we are added
+     * in the foreign device table FDT.
+     * 
+     * @param addr
+     *            The address of the device where our device wants to be registered as foreign device
+     * @param timeToLive
+     *            The time until we are automatically removed out of the FDT.
+     * @throws BACnetException
+     */
+    public void sendRegisterForeignDeviceMessage(InetSocketAddress addr, int timeToLive) throws BACnetException {
+        messageControl.sendRegisterForeignDeviceMessage(addr, timeToLive);
+    }
+
     //
-    // /
-    // / Remote device management
-    // /
+    //
+    // Remote device management
     //
     public RemoteDevice getRemoteDevice(int instanceId, Address address, Network network) throws BACnetException {
         RemoteDevice d = getRemoteDeviceImpl(instanceId, address, network);
@@ -507,7 +570,7 @@ public class LocalDevice implements RequestHandler {
     private RemoteDevice getRemoteDeviceImpl(int instanceId, Address address, Network network) {
         for (RemoteDevice d : remoteDevices) {
             if (d.getInstanceNumber() == instanceId && d.getAddress().equals(address)
-                    && ObjectUtils.isEqual(d.getNetwork(), network))
+                    && ObjectUtils.equals(d.getNetwork(), network))
                 return d;
         }
         return null;
@@ -518,8 +581,12 @@ public class LocalDevice implements RequestHandler {
     }
 
     public RemoteDevice getRemoteDevice(Address peer) {
+        return getRemoteDevice(peer, null);
+    }
+
+    public RemoteDevice getRemoteDevice(Address peer, Network network) {
         for (RemoteDevice d : remoteDevices) {
-            if (d.getAddress().equals(peer))
+            if (d.getAddress().equals(peer) && ObjectUtils.equals(d.getNetwork(), network))
                 return d;
         }
         return null;
@@ -535,16 +602,15 @@ public class LocalDevice implements RequestHandler {
 
     public RemoteDevice getRemoteDeviceByUserData(Object userData) {
         for (RemoteDevice d : remoteDevices) {
-            if (ObjectUtils.isEqual(userData, d.getUserData()))
+            if (ObjectUtils.equals(userData, d.getUserData()))
                 return d;
         }
         return null;
     }
 
     //
-    // /
-    // / Intrinsic events
-    // /
+    //
+    // Intrinsic events
     //
     @SuppressWarnings("unchecked")
     public List<BACnetException> sendIntrinsicEvent(ObjectIdentifier eventObjectIdentifier, TimeStamp timeStamp,
@@ -655,10 +721,10 @@ public class LocalDevice implements RequestHandler {
     }
 
     //
-    // /
-    // / Request Handler
-    // /
     //
+    // Request Handler
+    //
+    @Override
     public AcknowledgementService handleConfirmedRequest(Address from, Network network, byte invokeId,
             ConfirmedRequestService serviceRequest) throws BACnetException {
         try {
@@ -677,6 +743,7 @@ public class LocalDevice implements RequestHandler {
         }
     }
 
+    @Override
     public void handleUnconfirmedRequest(Address from, Network network, UnconfirmedRequestService serviceRequest) {
         try {
             serviceRequest.handle(this, from, network);
@@ -687,13 +754,12 @@ public class LocalDevice implements RequestHandler {
     }
 
     //
-    // /
-    // / Convenience methods
-    // /
     //
-    public Address getAddress() {
+    // Convenience methods
+    //
+    public Address getAddress(InetAddress inetAddress) {
         try {
-            return new Address(getLocalIPAddress(), messageControl.getPort());
+            return new Address(inetAddress.getAddress(), messageControl.getPort());
         }
         catch (Exception e) {
             // Should never happen, so just wrap in a RuntimeException
@@ -701,15 +767,33 @@ public class LocalDevice implements RequestHandler {
         }
     }
 
-    private byte[] getLocalIPAddress() throws UnknownHostException, SocketException {
+    public InetAddress getDefaultLocalInetAddress() throws UnknownHostException, SocketException {
         for (NetworkInterface iface : Collections.list(NetworkInterface.getNetworkInterfaces())) {
             for (InetAddress addr : Collections.list(iface.getInetAddresses())) {
                 if (!addr.isLoopbackAddress() && addr.isSiteLocalAddress())
-                    return addr.getAddress();
+                    return addr;
             }
         }
 
-        return InetAddress.getLocalHost().getAddress();
+        return InetAddress.getLocalHost();
+    }
+
+    public Address[] getAllLocalAddresses() {
+        try {
+            ArrayList<Address> result = new ArrayList<Address>();
+            for (NetworkInterface iface : Collections.list(NetworkInterface.getNetworkInterfaces())) {
+                for (InetAddress addr : Collections.list(iface.getInetAddresses())) {
+                    if (!addr.isLoopbackAddress() && addr.isSiteLocalAddress())
+                        result.add(getAddress(addr));
+                }
+            }
+
+            return result.toArray(new Address[result.size()]);
+        }
+        catch (Exception e) {
+            // Should never happen, so just wrap in a RuntimeException
+            throw new RuntimeException(e);
+        }
     }
 
     public IAmRequest getIAm() {
@@ -858,6 +942,7 @@ public class LocalDevice implements RequestHandler {
 
             // If the device supports read property multiple, send them all at once, or at least in partitions.
             List<PropertyReferences> partitions = refs.getPropertiesPartitioned(maxRef);
+            int counter = 0;
             for (PropertyReferences partition : partitions) {
                 properties = partition.getProperties();
                 List<ReadAccessSpecification> specs = new ArrayList<ReadAccessSpecification>();
@@ -866,42 +951,60 @@ public class LocalDevice implements RequestHandler {
 
                 ReadPropertyMultipleRequest request = new ReadPropertyMultipleRequest(
                         new SequenceOf<ReadAccessSpecification>(specs));
-                ReadPropertyMultipleAck ack = (ReadPropertyMultipleAck) send(d, request);
 
-                List<ReadAccessResult> results = ack.getListOfReadAccessResults().getValues();
-                ObjectIdentifier oid;
-                for (ReadAccessResult objectResult : results) {
-                    oid = objectResult.getObjectIdentifier();
-                    for (Result result : objectResult.getListOfResults().getValues())
-                        propertyValues.add(oid, result.getPropertyIdentifier(), result.getPropertyArrayIndex(), result
-                                .getReadResult().getDatum());
+                ReadPropertyMultipleAck ack;
+                try {
+                    ack = (ReadPropertyMultipleAck) send(d, request);
+                    counter++;
+
+                    List<ReadAccessResult> results = ack.getListOfReadAccessResults().getValues();
+                    ObjectIdentifier oid;
+                    for (ReadAccessResult objectResult : results) {
+                        oid = objectResult.getObjectIdentifier();
+                        for (Result result : objectResult.getListOfResults().getValues())
+                            propertyValues.add(oid, result.getPropertyIdentifier(), result.getPropertyArrayIndex(),
+                                    result.getReadResult().getDatum());
+                    }
+                }
+                catch (AbortAPDUException e) {
+                    if (e.getApdu().getAbortReason() == AbortReason.bufferOverflow.intValue()
+                            || e.getApdu().getAbortReason() == AbortReason.segmentationNotSupported.intValue())
+                        sendOneAtATime(d, partition, propertyValues);
+                    else
+                        throw new BACnetException("Completed " + counter + " requests. Excepted on: " + request, e);
+                }
+                catch (BACnetException e) {
+                    throw new BACnetException("Completed " + counter + " requests. Excepted on: " + request, e);
                 }
             }
         }
-        else {
+        else
             // If it doesn't support read property multiple, send them one at a time.
-            List<PropertyReference> refList;
-            ReadPropertyRequest request;
-            ReadPropertyAck ack;
-            properties = refs.getProperties();
-            for (ObjectIdentifier oid : properties.keySet()) {
-                refList = properties.get(oid);
-                for (PropertyReference ref : refList) {
-                    request = new ReadPropertyRequest(oid, ref.getPropertyIdentifier(), ref.getPropertyArrayIndex());
-                    try {
-                        ack = (ReadPropertyAck) send(d, request);
-                        propertyValues.add(oid, ack.getPropertyIdentifier(), ack.getPropertyArrayIndex(),
-                                ack.getValue());
-                    }
-                    catch (ErrorAPDUException e) {
-                        propertyValues.add(oid, ref.getPropertyIdentifier(), ref.getPropertyArrayIndex(),
-                                e.getBACnetError());
-                    }
-                }
-            }
-        }
+            sendOneAtATime(d, refs, propertyValues);
 
         return propertyValues;
+    }
+
+    private void sendOneAtATime(RemoteDevice d, PropertyReferences refs, PropertyValues propertyValues)
+            throws BACnetException {
+        List<PropertyReference> refList;
+        ReadPropertyRequest request;
+        ReadPropertyAck ack;
+        Map<ObjectIdentifier, List<PropertyReference>> properties = refs.getProperties();
+        for (ObjectIdentifier oid : properties.keySet()) {
+            refList = properties.get(oid);
+            for (PropertyReference ref : refList) {
+                request = new ReadPropertyRequest(oid, ref.getPropertyIdentifier(), ref.getPropertyArrayIndex());
+                try {
+                    ack = (ReadPropertyAck) send(d, request);
+                    propertyValues.add(oid, ack.getPropertyIdentifier(), ack.getPropertyArrayIndex(), ack.getValue());
+                }
+                catch (ErrorAPDUException e) {
+                    propertyValues.add(oid, ref.getPropertyIdentifier(), ref.getPropertyArrayIndex(),
+                            e.getBACnetError());
+                }
+            }
+        }
     }
 
     public PropertyValues readPresentValues(RemoteDevice d) throws BACnetException {
@@ -933,6 +1036,52 @@ public class LocalDevice implements RequestHandler {
 
     public void setPresentValue(RemoteDevice d, ObjectIdentifier oid, Encodable value) throws BACnetException {
         setProperty(d, oid, PropertyIdentifier.presentValue, value);
+    }
+
+    //
+    // Manual device discovery
+    public RemoteDevice findRemoteDevice(Address address, Network network, int deviceId) throws BACnetException,
+            PropertyValueException {
+        ObjectIdentifier deviceOid = new ObjectIdentifier(ObjectType.device, deviceId);
+        ReadPropertyRequest req = new ReadPropertyRequest(deviceOid, PropertyIdentifier.maxApduLengthAccepted);
+        ReadPropertyAck ack = (ReadPropertyAck) send(address, network, 1476, Segmentation.noSegmentation, req);
+
+        // If we got this far, then we got a response. Now get the other required properties.
+        RemoteDevice d = new RemoteDevice(deviceOid.getInstanceNumber(), address, network);
+        d.setMaxAPDULengthAccepted(((UnsignedInteger) ack.getValue()).intValue());
+        d.setSegmentationSupported(Segmentation.noSegmentation);
+
+        PropertyReferences refs = new PropertyReferences();
+        refs.add(deviceOid, PropertyIdentifier.segmentationSupported);
+        refs.add(deviceOid, PropertyIdentifier.vendorIdentifier);
+        PropertyValues values = readProperties(d, refs);
+
+        d.setSegmentationSupported((Segmentation) values.get(deviceOid, PropertyIdentifier.segmentationSupported));
+        d.setVendorId(((Unsigned16) values.get(deviceOid, PropertyIdentifier.vendorIdentifier)).intValue());
+
+        addRemoteDevice(d);
+
+        return d;
+    }
+
+    /** cache remote IndetSocketAddress because the creation takes 10s on Android devices. */
+    private InetSocketAddress cachedRemoteInetSocketAddress;
+
+    /**
+     * Returns the cached or newly created InetSocketAddress
+     * 
+     * @param fromAddr
+     *            The address of the remote device
+     * @param fromPort
+     *            The port of the remote device
+     * @return the InetSocketAddress of the remote device
+     */
+    public InetSocketAddress getCachedRemoteInetSocketAddress(final InetAddress fromAddr, final int fromPort) {
+        if (cachedRemoteInetSocketAddress == null || !cachedRemoteInetSocketAddress.getAddress().equals(fromAddr)
+                || cachedRemoteInetSocketAddress.getPort() != fromPort) {
+            cachedRemoteInetSocketAddress = new InetSocketAddress(fromAddr, fromPort);
+        }
+        return cachedRemoteInetSocketAddress;
     }
 
 }

@@ -17,6 +17,11 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j.type.enumerated;
 
@@ -30,6 +35,8 @@ public class ProgramError extends Enumerated {
     public static final ProgramError internal = new ProgramError(2);
     public static final ProgramError program = new ProgramError(3);
     public static final ProgramError other = new ProgramError(4);
+
+    public static final ProgramError[] ALL = { normal, loadFailed, internal, program, other, };
 
     public ProgramError(int value) {
         super(value);

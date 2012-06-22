@@ -17,8 +17,15 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j.service.confirmed;
+
+import org.apache.commons.lang3.StringUtils;
 
 import com.serotonin.bacnet4j.LocalDevice;
 import com.serotonin.bacnet4j.Network;
@@ -30,7 +37,6 @@ import com.serotonin.bacnet4j.type.enumerated.ErrorClass;
 import com.serotonin.bacnet4j.type.enumerated.ErrorCode;
 import com.serotonin.bacnet4j.type.primitive.CharacterString;
 import com.serotonin.bacnet4j.type.primitive.Enumerated;
-import com.serotonin.util.StringUtils;
 import com.serotonin.util.queue.ByteQueue;
 
 public class ReinitializeDeviceRequest extends ConfirmedRequestService {
@@ -90,7 +96,7 @@ public class ReinitializeDeviceRequest extends ConfirmedRequestService {
             password = "";
 
         // Check the password
-        if (StringUtils.isEqual(localDevice.getPassword(), password)) {
+        if (StringUtils.equals(localDevice.getPassword(), password)) {
             localDevice.getEventHandler().reinitializeDevice(reinitializedStateOfDevice);
             return null;
         }

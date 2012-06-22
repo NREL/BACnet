@@ -17,6 +17,11 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j.type.enumerated;
 
@@ -35,6 +40,10 @@ public class RejectReason extends Enumerated {
     public static final RejectReason tooManyArguments = new RejectReason(7);
     public static final RejectReason undefinedEnumeration = new RejectReason(8);
     public static final RejectReason unrecognizedService = new RejectReason(9);
+
+    public static final RejectReason[] ALL = { other, bufferOverflow, inconsistentParameters, invalidParameterDataType,
+            invalidTag, missingRequiredParameter, parameterOutOfRange, tooManyArguments, undefinedEnumeration,
+            unrecognizedService, };
 
     public RejectReason(int value) {
         super(value);

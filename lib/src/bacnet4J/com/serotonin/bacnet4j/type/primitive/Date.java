@@ -17,6 +17,11 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j.type.primitive;
 
@@ -38,7 +43,9 @@ public class Date extends Primitive {
     private final DayOfWeek dayOfWeek;
 
     public Date(int year, Month month, int day, DayOfWeek dayOfWeek) {
-        if (year == -1)
+        if (year > 1900)
+            year -= 1900;
+        else if (year == -1)
             year = 255;
         if (day == -1)
             day = 255;
@@ -54,7 +61,7 @@ public class Date extends Primitive {
     }
 
     public Date(GregorianCalendar now) {
-        this.year = now.get(Calendar.YEAR);
+        this.year = now.get(Calendar.YEAR) - 1900;
         this.month = Month.valueOf((byte) (now.get(Calendar.MONTH) + 1));
         this.day = now.get(Calendar.DATE);
         this.dayOfWeek = DayOfWeek.valueOf((byte) (((now.get(Calendar.DAY_OF_WEEK) + 5) % 7) + 1));
@@ -66,6 +73,10 @@ public class Date extends Primitive {
 
     public int getYear() {
         return year;
+    }
+
+    public int getCenturyYear() {
+        return year + 1900;
     }
 
     public Month getMonth() {
@@ -93,7 +104,7 @@ public class Date extends Primitive {
     //
     public Date(ByteQueue queue) {
         readTag(queue);
-        year = queue.popU1B() + 1900;
+        year = queue.popU1B();
         month = Month.valueOf(queue.pop());
         day = queue.popU1B();
         dayOfWeek = DayOfWeek.valueOf(queue.pop());
@@ -101,7 +112,7 @@ public class Date extends Primitive {
 
     @Override
     public void writeImpl(ByteQueue queue) {
-        queue.push(year - 1900);
+        queue.push(year);
         queue.push(month.getId());
         queue.push((byte) day);
         queue.push(dayOfWeek.getId());

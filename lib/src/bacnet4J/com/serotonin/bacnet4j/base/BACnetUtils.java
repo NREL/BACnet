@@ -17,6 +17,11 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j.base;
 
@@ -81,5 +86,23 @@ public class BACnetUtils {
         for (int i = 0; i < bdata.length; i++)
             bdata[i] = ((data[i / 8] >> (7 - (i % 8))) & 0x1) == 1;
         return bdata;
+    }
+
+    public static byte[] dottedStringToBytes(String s) throws NumberFormatException {
+        String[] parts = s.split("\\.");
+        byte[] b = new byte[parts.length];
+        for (int i = 0; i < b.length; i++)
+            b[i] = (byte) Integer.parseInt(parts[i]);
+        return b;
+    }
+
+    public static String bytesToDottedString(byte[] b) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < b.length; i++) {
+            if (i > 0)
+                sb.append('.');
+            sb.append(0xff & b[i]);
+        }
+        return sb.toString();
     }
 }

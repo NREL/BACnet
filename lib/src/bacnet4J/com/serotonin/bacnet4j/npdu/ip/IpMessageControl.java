@@ -17,6 +17,11 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j.npdu.ip;
 
@@ -28,8 +33,6 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import com.serotonin.bacnet4j.LocalDevice;
 import com.serotonin.bacnet4j.Network;
@@ -58,6 +61,7 @@ import com.serotonin.bacnet4j.service.confirmed.ConfirmedRequestService;
 import com.serotonin.bacnet4j.service.unconfirmed.UnconfirmedRequestService;
 import com.serotonin.bacnet4j.type.constructed.Address;
 import com.serotonin.bacnet4j.type.constructed.BACnetError;
+import com.serotonin.bacnet4j.type.constructed.ServicesSupported;
 import com.serotonin.bacnet4j.type.enumerated.ErrorClass;
 import com.serotonin.bacnet4j.type.enumerated.ErrorCode;
 import com.serotonin.bacnet4j.type.enumerated.Segmentation;
@@ -73,6 +77,8 @@ public class IpMessageControl extends Thread {
     private static final int MAX_SEGMENTS = 7; // Greater than 64.
 
     // Config
+    LocalDevice localDevice;
+    int localNetworkNumber;
     private int port;
     private String localBindAddress = "0.0.0.0";
     private String broadcastAddress = "255.255.255.255";
@@ -87,12 +93,24 @@ public class IpMessageControl extends Thread {
     final WaitingRoom waitingRoom = new WaitingRoom();
     private ExecutorService incomingExecutorService;
 
+    public IpMessageControl(LocalDevice localDevice) {
+        this.localDevice = localDevice;
+    }
+
     public RequestHandler getRequestHandler() {
         return requestHandler;
     }
 
     public void setRequestHandler(RequestHandler requestHandler) {
         this.requestHandler = requestHandler;
+    }
+
+    public int getLocalNetworkNumber() {
+        return localNetworkNumber;
+    }
+
+    public void setLocalNetworkNumber(int localNetworkNumber) {
+        this.localNetworkNumber = localNetworkNumber;
     }
 
     public void setPort(int port) {
@@ -151,9 +169,12 @@ public class IpMessageControl extends Thread {
         return segWindow;
     }
 
-    public void initialize() throws IOException {
-        incomingExecutorService = Executors.newCachedThreadPool();
-        socket = new DatagramSocket(port, InetAddress.getByName(localBindAddress));
+    public void initialize(ExecutorService executorService) throws IOException {
+        incomingExecutorService = executorService;
+        if (localBindAddress.equals("0.0.0.0"))
+            socket = new DatagramSocket(port);
+        else 
+            socket = new DatagramSocket(port, InetAddress.getByName(localBindAddress));
         socket.setBroadcast(true);
         start();
     }
@@ -161,15 +182,6 @@ public class IpMessageControl extends Thread {
     public void terminate() {
         if (socket != null)
             socket.close();
-
-        // Close the executor service.
-        incomingExecutorService.shutdown();
-        try {
-            incomingExecutorService.awaitTermination(3, TimeUnit.SECONDS);
-        }
-        catch (InterruptedException e) {
-            LocalDevice.getExceptionListener().receivedException(e);
-        }
     }
 
     // private byte getNextInvokeId() {
@@ -347,6 +359,10 @@ public class IpMessageControl extends Thread {
         sendImpl(data, new InetSocketAddress(broadcastAddress, port));
     }
 
+    public void sendRegisterForeignDeviceMessage(InetSocketAddress addr, int timeToLive) throws BACnetException {
+        sendImpl(createRegisterForeignDeviceMessage(timeToLive), addr);
+    }
+
     void sendImpl(APDU apdu, boolean broadcast, InetSocketAddress addr, Network network) throws BACnetException {
         sendImpl(createMessageData(apdu, broadcast, network), addr);
     }
@@ -354,6 +370,7 @@ public class IpMessageControl extends Thread {
     private void sendImpl(byte[] data, InetSocketAddress addr) throws BACnetException {
         try {
             DatagramPacket packet = new DatagramPacket(data, data.length, addr);
+//            System.out.println("packet send: "+packet.getAddress()+":"+packet.getPort());
             socket.send(packet);
         }
         catch (Exception e) {
@@ -417,6 +434,23 @@ public class IpMessageControl extends Thread {
         return queue.popAll();
     }
 
+    /** The total length of the foreign device registration package. */
+    private static final int REGISTER_FOREIGN_DEVICE_LENGTH = 6;
+    private byte[] createRegisterForeignDeviceMessage(int timeToLive) {
+        ByteQueue queue = new ByteQueue();
+
+        // BACnet/IP
+        queue.push(0x81);
+
+        // Register foreign device
+        queue.push(0x05);
+        
+        BACnetUtils.pushShort(queue, REGISTER_FOREIGN_DEVICE_LENGTH);
+        BACnetUtils.pushShort(queue, timeToLive);
+
+        return queue.popAll();
+    }
+
     // For receiving
     @Override
     public void run() {
@@ -426,8 +460,11 @@ public class IpMessageControl extends Thread {
         while (!socket.isClosed()) {
             try {
                 socket.receive(p);
-                incomingExecutorService.execute(new IncomingMessageExecutor(p));
-                p.setData(buffer);
+//                System.out.println("packet recv: "+p.getAddress()+":"+p.getPort());
+                if (!incomingExecutorService.isShutdown()) {
+                    incomingExecutorService.execute(new IncomingMessageExecutor(p));
+                    p.setData(buffer);
+                }
             }
             catch (IOException e) {
                 // no op. This happens if the socket gets closed by the destroy method.
@@ -453,6 +490,7 @@ public class IpMessageControl extends Thread {
         InetAddress fromAddr;
         int fromPort;
         Network fromNetwork;
+        ServicesSupported servicesSupported;
 
         IncomingMessageExecutor(DatagramPacket p) {
             originalQueue = new ByteQueue(p.getData(), 0, p.getLength());
@@ -467,6 +505,13 @@ public class IpMessageControl extends Thread {
 
         public void run() {
             try {
+                if (localDevice == null) {
+                    // Testing
+                    servicesSupported = new ServicesSupported();
+                    servicesSupported.setAll(true);
+                }
+                else
+                    servicesSupported = localDevice.getServicesSupported();
                 runImpl();
             }
             catch (Exception e) {
@@ -489,6 +534,7 @@ public class IpMessageControl extends Thread {
 
             if (apdu instanceof ConfirmedRequest) {
                 ConfirmedRequest confAPDU = (ConfirmedRequest) apdu;
+
                 InetSocketAddress from = new InetSocketAddress(fromAddr, fromPort);
                 byte invokeId = confAPDU.getInvokeId();
 
@@ -527,7 +573,7 @@ public class IpMessageControl extends Thread {
                     catch (BACnetException e) {
                         sendImpl(new Error(confAPDU.getInvokeId(), new BaseError((byte) 127, new BACnetError(
                                 ErrorClass.services, ErrorCode.inconsistentParameters))), false, from, fromNetwork);
-                        LocalDevice.getExceptionListener().receivedThrowable(e.getCause());
+                        LocalDevice.getExceptionListener().receivedThrowable(e);
                     }
                 }
             }
@@ -542,7 +588,7 @@ public class IpMessageControl extends Thread {
                 // Used for testing only. This is required to test the parsing of service data in an ack.
                 // ((ComplexACK) ack).parseServiceData();
 
-                waitingRoom.notifyMember(new InetSocketAddress(fromAddr, fromPort), fromNetwork,
+                waitingRoom.notifyMember(localDevice.getCachedRemoteInetSocketAddress(fromAddr, fromPort), fromNetwork,
                         ack.getOriginalInvokeId(), ack.isServer(), ack);
             }
         }
@@ -554,14 +600,25 @@ public class IpMessageControl extends Thread {
                 throw new MessageValidationAssertionException("Protocol id is not BACnet/IP (0x81)");
 
             byte function = queue.pop();
-            if (function != 0xa && function != 0xb && function != 0x4)
+            if (function != 0xa && function != 0xb && function != 0x4 && function != 0x0)
                 throw new MessageValidationAssertionException(
-                        "Function is not unicast, broadcast, or forward (0xa, 0xb, or 0x4)");
+                        "Function is not unicast, broadcast, forward" +
+                            " or foreign device reg anwser (0xa, 0xb, 0x4 or 0x0)");
 
             int length = BACnetUtils.popShort(queue);
             if (length != queue.size() + 4)
                 throw new MessageValidationAssertionException("Length field does not match data: given=" + length
                         + ", expected=" + (queue.size() + 4));
+
+            // answer to foreign device registration
+            if (function == 0x0){
+                int result = BACnetUtils.popShort(queue);
+                if (result != 0){
+                    System.out.println("Foreign device registration not successful! result: "+result);
+                }
+                // not APDU received, return
+                return null;
+            }
 
             if (function == 0x4) {
                 // A forward. Use the addr/port as the from address.
@@ -581,12 +638,19 @@ public class IpMessageControl extends Thread {
             if (npci.isNetworkMessage())
                 return null; // throw new MessageValidationAssertionException("Network messages are not supported");
 
+            // Check the destination network number work and do not respond to foreign networks requests  
+            if (npci.hasDestinationInfo()) {
+                int destNet = npci.getDestinationNetwork();
+                if (destNet > 0 && destNet != 0xffff && localNetworkNumber > 0 && localNetworkNumber != destNet)
+                    return null;
+            }
+
             if (npci.hasSourceInfo())
                 fromNetwork = new Network(npci.getSourceNetwork(), npci.getSourceAddress());
 
             // Create the APDU.
             try {
-                return APDU.createAPDU(queue);
+                return APDU.createAPDU(servicesSupported, queue);
             }
             catch (BACnetException e) {
                 // If it's already a BACnetException, don't bother wrapping it.

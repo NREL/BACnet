@@ -17,6 +17,11 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j.obj;
 
@@ -25,6 +30,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.lang3.ObjectUtils;
 
 import com.serotonin.bacnet4j.LocalDevice;
 import com.serotonin.bacnet4j.Network;
@@ -54,7 +61,6 @@ import com.serotonin.bacnet4j.type.primitive.ObjectIdentifier;
 import com.serotonin.bacnet4j.type.primitive.Real;
 import com.serotonin.bacnet4j.type.primitive.Time;
 import com.serotonin.bacnet4j.type.primitive.UnsignedInteger;
-import com.serotonin.util.ObjectUtils;
 
 /**
  * Additional validation - all object name values must be unique. - all object id values must be unique.
@@ -120,9 +126,8 @@ public class BACnetObject implements Serializable {
     }
 
     //
-    // /
-    // / Get property
-    // /
+    //
+    // Get property
     //
     public Encodable getProperty(PropertyIdentifier pid) throws BACnetServiceException {
         if (pid.intValue() == PropertyIdentifier.objectIdentifier.intValue())
@@ -179,15 +184,14 @@ public class BACnetObject implements Serializable {
     }
 
     //
-    // /
-    // / Set property
-    // /
+    //
+    // Set property
     //
     public void setProperty(PropertyIdentifier pid, Encodable value) throws BACnetServiceException {
         ObjectProperties.validateValue(id.getObjectType(), pid, value);
         setPropertyImpl(pid, value);
 
-        // If the reinquish default was set, make sure the present value gets updated as necessary.
+        // If the relinquish default was set, make sure the present value gets updated as necessary.
         if (pid.equals(PropertyIdentifier.relinquishDefault))
             setCommandableImpl((PriorityArray) getProperty(PropertyIdentifier.priorityArray));
     }
@@ -212,8 +216,8 @@ public class BACnetObject implements Serializable {
             throw new BACnetServiceException(ErrorClass.property, ErrorCode.writeAccessDenied);
         if (pid.intValue() == PropertyIdentifier.priorityArray.intValue())
             throw new BACnetServiceException(ErrorClass.property, ErrorCode.writeAccessDenied);
-        if (pid.intValue() == PropertyIdentifier.relinquishDefault.intValue())
-            throw new BACnetServiceException(ErrorClass.property, ErrorCode.writeAccessDenied);
+        //        if (pid.intValue() == PropertyIdentifier.relinquishDefault.intValue())
+        //            throw new BACnetServiceException(ErrorClass.property, ErrorCode.writeAccessDenied);
 
         if (ObjectProperties.isCommandable((ObjectType) getProperty(PropertyIdentifier.objectType), pid))
             setCommandable(value.getValue(), value.getPriority());
@@ -261,7 +265,7 @@ public class BACnetObject implements Serializable {
         Encodable oldValue = properties.get(pid);
         properties.put(pid, value);
 
-        if (!ObjectUtils.isEqual(value, oldValue)) {
+        if (!ObjectUtils.equals(value, oldValue)) {
             // Check for subscriptions.
             if (ObjectCovSubscription.sendCovNotification(id.getObjectType(), pid)) {
                 synchronized (covSubscriptions) {
@@ -293,10 +297,21 @@ public class BACnetObject implements Serializable {
         return new PriorityValue((UnsignedInteger) value);
     }
 
+    /**
+     * return all implemented properties
+     * 
+     * @return
+     */
+    public List<PropertyIdentifier> getProperties() {
+        ArrayList<PropertyIdentifier> list = new ArrayList<PropertyIdentifier>();
+        for (PropertyIdentifier pid : properties.keySet())
+            list.add(pid);
+        return list;
+    }
+
     //
-    // /
-    // / COV subscriptions
-    // /
+    //
+    // COV subscriptions
     //
     public void addCovSubscription(Address from, Network network, UnsignedInteger subscriberProcessIdentifier,
             Boolean issueConfirmedNotifications, UnsignedInteger lifetime) throws BACnetServiceException {

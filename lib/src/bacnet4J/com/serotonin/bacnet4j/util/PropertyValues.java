@@ -17,9 +17,15 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j.util;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -33,7 +39,9 @@ import com.serotonin.bacnet4j.type.enumerated.PropertyIdentifier;
 import com.serotonin.bacnet4j.type.primitive.ObjectIdentifier;
 import com.serotonin.bacnet4j.type.primitive.UnsignedInteger;
 
-public class PropertyValues implements Iterable<ObjectPropertyReference> {
+public class PropertyValues implements Iterable<ObjectPropertyReference>, Serializable {
+    private static final long serialVersionUID = 5880275533969236369L;
+
     private final Map<ObjectPropertyReference, Encodable> values = new HashMap<ObjectPropertyReference, Encodable>();
 
     public void add(ObjectIdentifier oid, PropertyIdentifier pid, UnsignedInteger pin, Encodable value) {
@@ -76,7 +84,10 @@ public class PropertyValues implements Iterable<ObjectPropertyReference> {
     }
 
     public String getString(ObjectIdentifier oid, PropertyIdentifier pid) {
-        return getNoErrorCheck(oid, pid).toString();
+        Encodable value = getNoErrorCheck(oid, pid);
+        if (value == null)
+            return null;
+        return value.toString();
     }
 
     public String getString(ObjectIdentifier oid, PropertyIdentifier pid, String defaultValue) {

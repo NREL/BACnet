@@ -17,6 +17,11 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j.obj;
 
@@ -88,7 +93,13 @@ public class FileObject extends BACnetObject {
     public OctetString readData(long start, long length) throws IOException {
         FileInputStream in = new FileInputStream(file);
         try {
-            in.skip(start);
+            while (start > 0) {
+                long result = in.skip(start);
+                if (result == -1)
+                    // EOF
+                    break;
+                start -= result;
+            }
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             StreamUtils.transfer(in, out, length);
             return new OctetString(out.toByteArray());

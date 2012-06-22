@@ -17,12 +17,16 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j.event;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import com.serotonin.bacnet4j.RemoteDevice;
 import com.serotonin.bacnet4j.RemoteObject;
@@ -59,15 +63,8 @@ public class DeviceEventHandler {
     // / Lifecycle
     // /
     //
-    public void initialize() {
-        dispatchService = Executors.newCachedThreadPool();
-    }
-
-    public void terminate() {
-        ExecutorService temp = dispatchService;
-        dispatchService = null;
-        if (temp != null)
-            temp.shutdown();
+    public void initialize(ExecutorService executorService) {
+        dispatchService = executorService;
     }
 
     //

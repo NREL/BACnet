@@ -17,6 +17,11 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j.service.confirmed;
 
@@ -33,6 +38,7 @@ import com.serotonin.bacnet4j.obj.FileObject;
 import com.serotonin.bacnet4j.service.acknowledgement.AcknowledgementService;
 import com.serotonin.bacnet4j.service.acknowledgement.AtomicReadFileAck;
 import com.serotonin.bacnet4j.type.constructed.Address;
+import com.serotonin.bacnet4j.type.enumerated.BackupState;
 import com.serotonin.bacnet4j.type.enumerated.ErrorClass;
 import com.serotonin.bacnet4j.type.enumerated.ErrorCode;
 import com.serotonin.bacnet4j.type.enumerated.FileAccessMethod;
@@ -83,6 +89,15 @@ public class AtomicReadFileRequest extends ConfirmedRequestService {
                 System.out.println("File access request on an object that is not a file");
                 throw new BACnetServiceException(ErrorClass.object, ErrorCode.rejectInconsistentParameters);
             }
+
+            // Check for status (backup/restore)
+            BackupState bsOld = (BackupState) localDevice.getConfiguration().getProperty(
+                    PropertyIdentifier.backupAndRestoreState);
+            if (bsOld.intValue() == BackupState.preparingForBackup.intValue()
+                    || bsOld.intValue() == BackupState.preparingForRestore.intValue())
+                // Send error: device configuration in progress as response
+                throw new BACnetServiceException(ErrorClass.device, ErrorCode.configurationInProgress);
+
             file = (FileObject) obj;
 
             // Validation.
@@ -102,7 +117,11 @@ public class AtomicReadFileRequest extends ConfirmedRequestService {
         long start = fileStartPosition.longValue();
         long length = requestedCount.longValue();
 
-        if (start >= file.length())
+        /*
+         * throw an exception when the following conditions are met - start is a negative number - start exceeds the
+         * length of the file object
+         */
+        if (start < 0 || start > file.length())
             throw new BACnetErrorException(getChoiceId(), ErrorClass.object, ErrorCode.invalidFileStartPosition);
 
         try {

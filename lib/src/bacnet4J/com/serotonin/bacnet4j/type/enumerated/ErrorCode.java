@@ -17,6 +17,11 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j.type.enumerated;
 
@@ -105,6 +110,26 @@ public class ErrorCode extends Enumerated {
     public static final ErrorCode notConfiguredForTriggeredLogging = new ErrorCode(78);
     public static final ErrorCode communicationDisabled = new ErrorCode(83);
     public static final ErrorCode unknownFileSize = new ErrorCode(122);
+
+    public static final ErrorCode[] ALL = { other, authenticationFailed, configurationInProgress, deviceBusy,
+            dynamicCreationNotSupported, fileAccessDenied, incompatibleSecurityLevels, inconsistentParameters,
+            inconsistentSelectionCriterion, invalidDataType, invalidFileAccessMethod, invalidFileStartPosition,
+            invalidOperatorName, invalidParameterDataType, invalidTimeStamp, keyGenerationError,
+            missingRequiredParameter, noObjectsOfSpecifiedType, noSpaceForObject, noSpaceToAddListElement,
+            noSpaceToWriteProperty, noVtSessionsAvailable, propertyIsNotAList, objectDeletionNotPermitted,
+            objectIdentifierAlreadyExists, operationalProblem, passwordFailure, readAccessDenied, securityNotSupported,
+            serviceRequestDenied, timeout, unknownObject, unknownProperty, unknownVtClass, unknownVtSession,
+            unsupportedObjectType, valueOutOfRange, vtSessionAlreadyClosed, vtSessionTerminationFailure,
+            writeAccessDenied, characterSetNotSupported, invalidArrayIndex, covSubscriptionFailed, notCovProperty,
+            optionalFunctionalityNotSupported, invalidConfigurationData, datatypeNotSupported, duplicateName,
+            duplicateObjectId, propertyIsNotAnArray, abortBufferOverflow, abortInvalidApduInThisState,
+            abortPreemptedByHigherPriorityTask, abortSegmentationNotSupported, abortProprietary, abortOther,
+            invalidTag, networkDown, rejectBufferOverflow, rejectInconsistentParameters,
+            rejectInvalidParameterDataType, rejectInvalidTag, rejectMissingRequiredParameter,
+            rejectParameterOutOfRange, rejectTooManyArguments, rejectUndefinedEnumeration, rejectUnrecognizedService,
+            rejectProprietary, rejectOther, unknownDevice, unknownRoute, valueNotInitialized, invalidEventState,
+            noAlarmConfigured, logBufferFull, loggedValuePurged, noPropertySpecified, notConfiguredForTriggeredLogging,
+            communicationDisabled, unknownFileSize, };
 
     public ErrorCode(int value) {
         super(value);

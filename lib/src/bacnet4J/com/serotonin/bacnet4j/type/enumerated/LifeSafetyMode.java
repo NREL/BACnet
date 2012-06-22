@@ -17,6 +17,11 @@
  * GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * When signing a commercial license with Serotonin Software Technologies Inc.,
+ * the following extension to GPL is made. A special exception to the GPL is 
+ * included to allow you to distribute a combined work that includes BAcnet4J 
+ * without being obliged to provide the source code for any proprietary components.
  */
 package com.serotonin.bacnet4j.type.enumerated;
 
@@ -40,6 +45,9 @@ public class LifeSafetyMode extends Enumerated {
     public static final LifeSafetyMode disabled = new LifeSafetyMode(12);
     public static final LifeSafetyMode automaticReleaseDisabled = new LifeSafetyMode(13);
     public static final LifeSafetyMode defaultMode = new LifeSafetyMode(14);
+
+    public static final LifeSafetyMode[] ALL = { off, on, test, manned, unmanned, armed, disarmed, prearmed, slow,
+            fast, disconnected, enabled, disabled, automaticReleaseDisabled, defaultMode, };
 
     public LifeSafetyMode(int value) {
         super(value);
