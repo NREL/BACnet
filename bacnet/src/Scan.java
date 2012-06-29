@@ -800,15 +800,6 @@ public class Scan {
           t_oid.presentValue,
           t_oid.units));
     
-    SDISender sender = new SDISender();
-    com.google.gson.JsonObject jObj = new com.google.gson.JsonObject();
-    if (t_oid.presentValue != null) {
-      jObj.add(new Long(new Date().getTime()).toString(), 
-            new com.google.gson.JsonPrimitive(t_oid.presentValue));
-      sender.sendData("modRaw", t_parent.objectName + "_" + t_oid.objectName, 
-            jObj);
-    }
-
     for (TrendLogData tld : t_oid.trendLog)
     {
       writer.println(String.format("%s, %s, %s, %s, %s, %s, %s, %s, %s", 
