@@ -314,8 +314,12 @@ public class Scan {
 
           if (!somethingstuck)
           {
+            os.object.setProperty(PropertyIdentifier.outOfService, 
+                new com.serotonin.bacnet4j.type.primitive.Boolean(true));
             throw new Exception("Unknown / unexpected type of data");
           }
+          os.object.setProperty(PropertyIdentifier.outOfService, 
+              new com.serotonin.bacnet4j.type.primitive.Boolean(false));
         } catch (Exception e) {
           m_logger.log(Level.SEVERE, "Error updating value", e);
         }
@@ -565,7 +569,7 @@ public class Scan {
     options.addOption("n", "num-scans", true, "Number of scans to perform, default is 1, -1 scans indefinitely");
     options.addOption("t", "time-between-updates", true, "Amount of time (in ms) to wait between finishing one scan and starting another. This time is also used for the update interval for the slave device values. Default is 10000ms");
     options.addOption("F", "oid-file", true, "JSON oid file to use for the slave device configuration");
-    options.addOption("E", "example-oid-file", true, "Write an example JSON oid inset file out and exit, with the given filename");
+    options.addOption("E", "example-oid-file", true, "Write an example JSON oid input file out and exit, with the given filename");
     options.addOption("v", "verbose", false, "Verbose logging (Info Level). Default is warning and error logging.");
     options.addOption("vv", "very-verbose", false, "Very verbose logging (All Levels). Default is warning and error logging.");
 
@@ -646,13 +650,13 @@ public class Scan {
           Vector<OIDValue> exampleoids = new Vector<OIDValue>();
           OIDValue i = new OIDValue();
           i.objectName = "some_object";
-          i.objectType = "analog inset";
+          i.objectType = "analog input";
           i.objectSource = "echo {value:\"72.5\", timestamp:\"2012-02-01 12:00:00\", units:\"degrees fahrenheit\"}";
           exampleoids.add(i);
 
           OIDValue i2 = new OIDValue();
           i2.objectName = "some_object 2";
-          i2.objectType = "binary inset";
+          i2.objectType = "binary input";
           i2.objectSource = "echo {value:\"true\", timestamp:\"2012-02-01 12:00:00\", units:\"\"}";
 
 
