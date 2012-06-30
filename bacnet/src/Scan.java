@@ -86,6 +86,7 @@ import com.serotonin.bacnet4j.type.primitive.ObjectIdentifier;
 import com.serotonin.bacnet4j.type.primitive.Real;
 import com.serotonin.bacnet4j.type.primitive.SignedInteger;   
 import com.serotonin.bacnet4j.type.primitive.UnsignedInteger;   
+import com.serotonin.bacnet4j.type.primitive.OctetString;   
 
 import com.serotonin.bacnet4j.type.enumerated.BinaryPV;
 import com.serotonin.bacnet4j.type.enumerated.EngineeringUnits;
@@ -362,14 +363,18 @@ public class Scan {
   private int m_min;
   private int m_max;
   private LocalDevice m_localDevice;
+  private java.util.Map<RemoteOID, java.util.Date> m_oidScanTimes;
+  private int m_defaultTimeBetweenScans;
 
-  public Scan(LocalDevice ld, int min, int max, Vector<DeviceFilter> filters)
+  public Scan(LocalDevice ld, int min, int max, Vector<DeviceFilter> filters, int defaultTime)
   {
     m_localDevice = ld;
     m_logger = Logger.getLogger("BACnetScanner");
     m_filters = filters;
     m_min = min;
     m_max = max;
+    m_oidScanTimes = new java.util.HashMap<RemoteOID, java.util.Date>();
+    m_defaultTimeBetweenScans = defaultTime;
   }
 
 
@@ -395,9 +400,89 @@ public class Scan {
     }        
   }
 
+  static class RemoteOID {
+    int instanceNumber;
+    UnsignedInteger networkNumber;
+    OctetString macAddress;
+    byte[] networkAddress;
+
+    ObjectType objectType;
+    int objectNumber;
+
+
+    @Override public int hashCode()
+    {
+      return instanceNumber 
+        ^ (networkNumber == null?0:networkNumber.hashCode())
+        ^ (macAddress == null?0:macAddress.hashCode())
+        ^ (networkAddress == null?0:java.util.Arrays.hashCode(networkAddress))
+        ^ (objectType == null?0:objectType.hashCode())
+        ^ objectNumber;
+    }
+
+    @Override public boolean equals(Object o)
+    {
+      if (this == o) { return true; }
+
+      if (!(o instanceof RemoteOID)) { return false; }
+
+      RemoteOID that = (RemoteOID)o;
+
+      return instanceNumber == that.instanceNumber
+        && m_equals(networkNumber, that.networkNumber)
+        && m_equals(macAddress, that.macAddress)
+        && m_equals(networkAddress, that.networkAddress)
+        && m_equals(objectType, that.objectType)
+        && objectNumber == that.objectNumber;
+    }
+
+    private static <T> boolean m_equals(T t_lhs, T t_rhs)
+    {
+      if (t_lhs == null && t_rhs == null) { return true; }
+
+      if (t_lhs == null || t_rhs == null) { return false; }
+
+      return t_lhs.equals(t_rhs);
+    }
+
+    public RemoteOID(RemoteDevice t_rd, ObjectIdentifier t_oid)
+    {
+      instanceNumber = t_rd.getInstanceNumber();
+
+      networkNumber = null;
+      macAddress = null;
+      networkAddress = null;
+
+      Address a = t_rd.getAddress();
+
+      if (a != null)
+      {
+        networkNumber = a.getNetworkNumber();
+        macAddress = a.getMacAddress();
+      }
+
+      Network n = t_rd.getNetwork();
+
+      if (n != null)
+      {
+        networkAddress = n.getNetworkAddress();
+      }
+
+      if (t_oid != null)
+      {
+        objectType = t_oid.getObjectType();
+        objectNumber = t_oid.getInstanceNumber();
+      } else {
+        objectType = null;
+        objectNumber = 0;
+      }
+    }
+  }
+
   static class OIDFilter {
     String objectType;
     String instanceNumber;
+    int timeBetweenScans;
 
     public boolean matches(ObjectIdentifier t_oid)
     {
@@ -426,6 +511,8 @@ public class Scan {
     String networkNumber;
     String macAddress;
     String networkAddress;
+
+    int timeBetweenScans;
 
     Vector<OIDFilter> oidFilters;
 
@@ -478,7 +565,7 @@ public class Scan {
     options.addOption("n", "num-scans", true, "Number of scans to perform, default is 1, -1 scans indefinitely");
     options.addOption("t", "time-between-updates", true, "Amount of time (in ms) to wait between finishing one scan and starting another. This time is also used for the update interval for the slave device values. Default is 10000ms");
     options.addOption("F", "oid-file", true, "JSON oid file to use for the slave device configuration");
-    options.addOption("E", "example-oid-file", true, "Write an example JSON oid input file out and exit, with the given filename");
+    options.addOption("E", "example-oid-file", true, "Write an example JSON oid inset file out and exit, with the given filename");
     options.addOption("v", "verbose", false, "Verbose logging (Info Level). Default is warning and error logging.");
     options.addOption("vv", "very-verbose", false, "Very verbose logging (All Levels). Default is warning and error logging.");
 
@@ -524,10 +611,12 @@ public class Scan {
           f.networkNumber = ".*";
           f.macAddress = ".*";
           f.networkAddress = ".*";
+          f.timeBetweenScans = 30000;
 
           OIDFilter of = new OIDFilter();
           of.objectType = "Binary .*";
           of.instanceNumber = "1.*";
+          of.timeBetweenScans = 60000;
           f.oidFilters = new Vector<OIDFilter>();
           f.oidFilters.add(of);
           examplefilters.add(f);
@@ -557,13 +646,13 @@ public class Scan {
           Vector<OIDValue> exampleoids = new Vector<OIDValue>();
           OIDValue i = new OIDValue();
           i.objectName = "some_object";
-          i.objectType = "analog input";
+          i.objectType = "analog inset";
           i.objectSource = "echo {value:\"72.5\", timestamp:\"2012-02-01 12:00:00\", units:\"degrees fahrenheit\"}";
           exampleoids.add(i);
 
           OIDValue i2 = new OIDValue();
           i2.objectName = "some_object 2";
-          i2.objectType = "binary input";
+          i2.objectType = "binary inset";
           i2.objectSource = "echo {value:\"true\", timestamp:\"2012-02-01 12:00:00\", units:\"\"}";
 
 
@@ -729,7 +818,7 @@ public class Scan {
     if (scan)
     {
       logger.info("Creating scanner object");
-      s = new Scan(localDevice, min, max, filters);
+      s = new Scan(localDevice, min, max, filters, time_between_updates);
     }
 
     SlaveDevice sd = null;
@@ -741,18 +830,37 @@ public class Scan {
     }
 
 
-    for (int i=0; s!=null && i < num_scans || num_scans == -1; ++i)
+    java.util.Date lastSlaveUpdate = null;
+
+    for (int i=0; s!=null && (i < num_scans || num_scans == -1); ++i)
     {
       logger.info("Beginning scan " + (i+1) + " of " + num_scans);
 
       if (slave_device)
       {
-        sd.updateValues();
+        boolean doupdate = false;
+        java.util.Date now = new java.util.Date();
+        if (lastSlaveUpdate == null)
+        {
+          doupdate = true;
+        } else {
+          if (now.getTime() - lastSlaveUpdate.getTime() >= time_between_updates)
+          {
+            doupdate = true;
+          }
+        }
+          
+
+        if (doupdate)
+        {
+          logger.info("Updating slave device");
+          sd.updateValues();
+          lastSlaveUpdate = now;
+        }
       }
 
       s.run();
 
-      logger.info("Sleeping until next scan: " + time_between_updates + " ms");
       Thread.sleep(time_between_updates);
     }
 
@@ -761,9 +869,26 @@ public class Scan {
     // keep running if we have a slave_device
     while (slave_device)
     {
-      logger.info("keeping slave device alive");
-      Thread.sleep(5000);
-      sd.updateValues();
+      boolean doupdate = false;
+      java.util.Date now = new java.util.Date();
+      if (lastSlaveUpdate == null)
+      {
+        doupdate = true;
+      } else {
+        if (now.getTime() - lastSlaveUpdate.getTime() >= time_between_updates)
+        {
+          doupdate = true;
+        }
+      }
+
+      if (doupdate)
+      {
+        logger.info("Updating slave device");
+        sd.updateValues();
+        lastSlaveUpdate = now;
+      }
+
+      Thread.sleep(1000);
     }
 
     logger.info("Shutting down");
@@ -969,16 +1094,16 @@ public class Scan {
     return newoid;
   }
 
-  private boolean deviceMatches(RemoteDevice t_rd, Vector<DeviceFilter> t_filters)
+  private int deviceMatches(RemoteDevice t_rd, Vector<DeviceFilter> t_filters)
   {
     return oidMatches(t_rd, null, t_filters);
   }
 
-  private boolean oidMatches(RemoteDevice t_rd, ObjectIdentifier t_id, Vector<DeviceFilter> t_filters)
+  private int oidMatches(RemoteDevice t_rd, ObjectIdentifier t_id, Vector<DeviceFilter> t_filters)
   {
     if (t_filters == null)
     {
-      return true;
+      return 0;
     }
 
     for (DeviceFilter filter : t_filters) {
@@ -986,18 +1111,18 @@ public class Scan {
       {
         if (t_id == null)
         {
-          return true;
+          return filter.timeBetweenScans;
         } else {
           if (filter.oidFilters.isEmpty())
           {
             // if there's no oidfilters, accept all of them for this device
-            return true;
+            return filter.timeBetweenScans;
           } else {
             for (OIDFilter oidFilter : filter.oidFilters)
             {
               if (oidFilter.matches(t_id))
               {
-                return true;
+                return oidFilter.timeBetweenScans;
               }
             }
           }
@@ -1005,7 +1130,7 @@ public class Scan {
       }
     }
 
-    return false;
+    return -1;
   }
 
   private void broadcastWhois(LocalDevice t_localDevice, int low, int high)
@@ -1128,9 +1253,40 @@ public class Scan {
 
         broadcastWhois(m_localDevice, min, max);
 
+        boolean doscandevice = false;
+        int deviceTimeBetweenScans = deviceMatches(rd, m_filters);
 
-        if (deviceMatches(rd, m_filters))
+        if (deviceTimeBetweenScans >= 0)
         {
+          if (deviceTimeBetweenScans == 0)
+          {
+            deviceTimeBetweenScans = m_defaultTimeBetweenScans;
+          }
+
+          RemoteOID ro = new RemoteOID(rd, null);
+
+          java.util.Date lastscan = m_oidScanTimes.get(ro);
+          java.util.Date thisscan = new java.util.Date();
+
+          if (lastscan != null)
+          {
+            long ms = thisscan.getTime() - lastscan.getTime();
+            if (ms >= deviceTimeBetweenScans)
+            {
+              doscandevice = true;
+            } else {
+              m_logger.finest("Skipping device, it's only been " + ms + " required: " + deviceTimeBetweenScans);
+            }
+          } else {
+            doscandevice = true;
+            m_logger.finest("Scanning device, it has never been scanned.");
+          }
+        }
+
+        if (doscandevice)
+        {
+          m_oidScanTimes.put(new RemoteOID(rd, null), new java.util.Date());
+
           m_logger.info("Getting device info: " + rd);
           m_localDevice.getExtendedDeviceInformation(rd);
 
@@ -1145,18 +1301,50 @@ public class Scan {
 
           // and now from all objects under the device object >> ai0, ai1,bi0,bi1...
           for (ObjectIdentifier oid : oids) {
-            if (oidMatches(rd, oid, m_filters))
-            {
-              refs.add(oid, PropertyIdentifier.objectName);
-              refs.add(oid, PropertyIdentifier.presentValue);
-              refs.add(oid, PropertyIdentifier.units);
+            int timeBetweenScans = oidMatches(rd, oid, m_filters);
 
-              m_logger.finer("OID Object: " + oid.toString() + " objectype: " + oid.getObjectType().toString());
-              if (oid.getObjectType().equals(ObjectType.trendLog))
+            if (timeBetweenScans >= 0)
+            {
+              if (timeBetweenScans == 0)
               {
-                m_logger.finer("Adding totalRecordCount and recordCount for oid: " + oid.toString());
-                refs.add(oid, PropertyIdentifier.totalRecordCount);
-                refs.add(oid, PropertyIdentifier.recordCount);
+                timeBetweenScans = m_defaultTimeBetweenScans;
+              }
+
+              RemoteOID ro = new RemoteOID(rd, oid);
+
+              boolean doscan = false;
+
+              java.util.Date lastscan = m_oidScanTimes.get(ro);
+              java.util.Date thisscan = new java.util.Date();
+
+              if (lastscan != null)
+              {
+                long ms = thisscan.getTime() - lastscan.getTime();
+                if (ms >= timeBetweenScans)
+                {
+                  doscan = true;
+                } else {
+                  m_logger.finest("Skipping OID, it's only been " + ms + " required: " + timeBetweenScans);
+                }
+              } else {
+                m_logger.finest("Scanning OID, it has never been scanned.");
+                doscan = true;
+              }
+
+              if (doscan)
+              {
+                m_oidScanTimes.put(ro, thisscan);
+                refs.add(oid, PropertyIdentifier.objectName);
+                refs.add(oid, PropertyIdentifier.presentValue);
+                refs.add(oid, PropertyIdentifier.units);
+
+                m_logger.finer("OID Object: " + oid.toString() + " objectype: " + oid.getObjectType().toString());
+                if (oid.getObjectType().equals(ObjectType.trendLog))
+                {
+                  m_logger.finer("Adding totalRecordCount and recordCount for oid: " + oid.toString());
+                  refs.add(oid, PropertyIdentifier.totalRecordCount);
+                  refs.add(oid, PropertyIdentifier.recordCount);
+                }
               }
             } else {
               m_logger.finest("Skipping OID, no filter matched: " + oid.toString());
