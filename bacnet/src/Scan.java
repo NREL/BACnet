@@ -479,6 +479,8 @@ public class Scan {
     options.addOption("t", "time-between-updates", true, "Amount of time (in ms) to wait between finishing one scan and starting another. This time is also used for the update interval for the slave device values. Default is 10000ms");
     options.addOption("F", "oid-file", true, "JSON oid file to use for the slave device configuration");
     options.addOption("E", "example-oid-file", true, "Write an example JSON oid input file out and exit, with the given filename");
+    options.addOption("v", "verbose", false, "Verbose logging (Info Level). Default is warning and error logging.");
+    options.addOption("vv", "very-verbose", false, "Very verbose logging (All Levels). Default is warning and error logging.");
 
     int min = -1;
     int max = -1;
@@ -490,6 +492,7 @@ public class Scan {
     Vector<DeviceFilter> filters = null; 
     Vector<OIDValue> oidvalues = null; 
 
+    Level log_level = Level.WARNING;
 
     boolean scan = false;
     boolean slave_device = false;
@@ -640,6 +643,17 @@ public class Scan {
       }
 
       devname = line.getOptionValue("dev", "eth0");
+
+      if (line.hasOption("v"))
+      {
+        log_level = Level.INFO;
+      }
+
+      if (line.hasOption("vv"))
+      {
+        log_level = Level.ALL;
+      }
+
     } catch (Exception e) {
       HelpFormatter hp = new HelpFormatter();
       hp.printHelp("Syntax:", options, true);
@@ -658,9 +672,8 @@ public class Scan {
       logger.log(Level.SEVERE, "Unable to create log file", e);
     }
 
-    logger.setLevel(Level.ALL);
 
-
+    logger.setLevel(log_level);
 
 
     NetworkInterface networkinterface = null;
@@ -799,7 +812,7 @@ public class Scan {
           t_oid.objectName,
           t_oid.presentValue,
           t_oid.units));
-    
+          
     for (TrendLogData tld : t_oid.trendLog)
     {
       writer.println(String.format("%s, %s, %s, %s, %s, %s, %s, %s, %s", 
@@ -933,7 +946,7 @@ public class Scan {
           }
         }  
       } catch (Exception e) {
-        m_logger.log(Level.SEVERE, "Error with reading trend log from device", e);
+        m_logger.log(Level.INFO, "Error with reading trend log from device", e);
       }
     }
 
@@ -1184,7 +1197,7 @@ public class Scan {
                 OID child = buildObject(m_localDevice, rd, oid, pvs);
                 parent.children.add(child);
               } catch (Exception e) {
-                m_logger.log(Level.SEVERE, "Error creating child object", e);
+                m_logger.log(Level.FINE, "Error creating child object", e);
               }
             }
 
@@ -1194,14 +1207,14 @@ public class Scan {
          
 
           } catch (Exception e) {
-            m_logger.log(Level.SEVERE, "Error creating parent object", e);
+            m_logger.log(Level.FINE, "Error creating parent objectWARNING", e);
           }
         } else {
           m_logger.finest("Skipping device, no filter matches: " + rd.toString());
         }
 
       } catch (BACnetException e) {
-        m_logger.log(Level.SEVERE, "BACnetException", e);
+        m_logger.log(Level.WARNING, "BACnetException", e);
       } catch (java.lang.InterruptedException e) {
         m_logger.info("Done Scanning Devices");
         break;
