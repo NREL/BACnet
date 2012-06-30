@@ -774,6 +774,11 @@ public class Scan {
       System.exit(-1);
     }
 
+    if (networkinterface == null)
+    {
+      System.out.println("Unable to open device: " + devname);
+      System.exit(-1);
+    }
 
     List<InterfaceAddress> addresses = networkinterface.getInterfaceAddresses();
 
@@ -827,6 +832,12 @@ public class Scan {
     {
       logger.info("Creating slave device object");
       sd = new SlaveDevice(localDevice, oidvalues);
+    }
+
+    if ( (slave_device == false && scan == false)
+        || (slave_device == false && scan != false && num_scans == 0))
+    {
+      logger.severe("Nothing to do, no slave_device enabled and no scan enabled, or scan enabled and numscans set to 0");
     }
 
 
