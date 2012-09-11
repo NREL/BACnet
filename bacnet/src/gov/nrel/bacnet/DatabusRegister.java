@@ -16,7 +16,7 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.PosixParser;
 
-import gov.nrel.bacnet.Scan.DeviceFilter;
+import gov.nrel.bacnet.DeviceFilter;
 
 
 public class DatabusRegister {
@@ -40,6 +40,7 @@ public class DatabusRegister {
 		java.lang.reflect.Type vectortype 
 		= new com.google.gson.reflect.TypeToken<Vector<DeviceFilter>>() {}.getType();
 		Vector<DeviceFilter> dFilters = gson.fromJson(filterfile, vectortype);
+		
 		
 		DatabusSender sender = new DatabusSender(databusUrl);
 		

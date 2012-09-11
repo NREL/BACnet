@@ -9,4 +9,4 @@ done
 
 export CLASSPATH=bacnet/bin:$CLASSPATH
 
-java -classpath $CLASSPATH gov.nrel.bacnet.Scan $@
+java -Xdebug -Xrunjdwp:transport=dt_socket,address=9680,server=y,suspend=y -classpath $CLASSPATH gov.nrel.bacnet.Scan $@
