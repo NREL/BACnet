@@ -987,7 +987,7 @@ public class Scan {
 			if (t_oid.presentValue != null && t_oid.oid.getObjectType() != null) {
 				sender.sendData(
 						BACNET_PREFIX + "-" + t_parent.oid.getInstanceNumber()
-								+ "." + noSpaces(t_oid.oid.getObjectType())
+								+ noSpaces(t_oid.oid.getObjectType())
 								+ t_oid.oid.getInstanceNumber(), System
 								.currentTimeMillis(), new Double(
 								t_oid.presentValue));
@@ -997,7 +997,7 @@ public class Scan {
 				if (tld.value != null && t_oid.oid.getObjectType() != null) {
 					sender.sendData(
 							BACNET_PREFIX + "-"
-									+ t_parent.oid.getInstanceNumber() + "."
+									+ t_parent.oid.getInstanceNumber()
 									+ noSpaces(t_oid.oid.getObjectType())
 									+ t_oid.oid.getInstanceNumber(),
 							convertToMillis(tld.date, tld.time), new Double(
