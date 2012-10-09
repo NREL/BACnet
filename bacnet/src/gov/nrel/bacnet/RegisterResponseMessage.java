@@ -1,5 +1,7 @@
 package gov.nrel.bacnet;
 
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.bind.annotation.XmlElement;
 
@@ -14,6 +16,18 @@ public class RegisterResponseMessage {
 	@JsonProperty("postKey")
 	@XmlElement(name="postKey")
 	public String postKey;
+
+	@JsonProperty("groups")
+    @XmlElement(name="groups")
+	public List<GroupKey> groupKeys = new ArrayList<GroupKey>();
+	
+	public List<GroupKey> getGroupKeys() {
+		return groupKeys;
+	}
+
+	public void setGroupKeys(List<GroupKey> semantics) {
+		this.groupKeys = semantics;
+	}
 
 	public String getModelName() {
 		return modelName;

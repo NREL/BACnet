@@ -861,8 +861,9 @@ public class Scan {
 
 		java.util.Date lastSlaveUpdate = null;
 
-		for (int i = 0; s != null && (i < num_scans || num_scans == -1); ++i) {
-			logger.info("Beginning scan " + (i + 1) + " of " + num_scans);
+		for (int i = 0;;) { // s != null && (i < num_scans || num_scans == -1);
+							// ++i) {
+			logger.info("Beginning scan " + (i++ + 1) + " of " + num_scans);
 
 			if (slave_device) {
 				boolean doupdate = false;
@@ -884,35 +885,25 @@ public class Scan {
 
 			s.run();
 
-			Thread.sleep(time_between_updates);
+			// Thread.sleep(time_between_updates);
 		}
 
-		logger.info("Scanning complete");
+		// logger.info("Scanning complete");
 
 		// keep running if we have a slave_device
-		while (slave_device) {
-			boolean doupdate = false;
-			java.util.Date now = new java.util.Date();
-			if (lastSlaveUpdate == null) {
-				doupdate = true;
-			} else {
-				if (now.getTime() - lastSlaveUpdate.getTime() >= time_between_updates) {
-					doupdate = true;
-				}
-			}
-
-			if (doupdate) {
-				logger.info("Updating slave device");
-				sd.updateValues();
-				lastSlaveUpdate = now;
-			}
-
-			Thread.sleep(1000);
-		}
-
-		logger.info("Shutting down");
-		localDevice.terminate();
-
+		/*
+		 * while (slave_device) { boolean doupdate = false; java.util.Date now =
+		 * new java.util.Date(); if (lastSlaveUpdate == null) { doupdate = true;
+		 * } else { if (now.getTime() - lastSlaveUpdate.getTime() >=
+		 * time_between_updates) { doupdate = true; } }
+		 * 
+		 * if (doupdate) { logger.info("Updating slave device");
+		 * sd.updateValues(); lastSlaveUpdate = now; }
+		 * 
+		 * Thread.sleep(1000); }
+		 * 
+		 * logger.info("Shutting down"); localDevice.terminate();
+		 */
 	}
 
 	static class TrendLogData {
@@ -950,13 +941,13 @@ public class Scan {
 				t_oid.oid.getInstanceNumber(), t_oid.objectName,
 				t_oid.presentValue, t_oid.units));
 
-		for (TrendLogData tld : t_oid.trendLog) {
-			writer.println(String.format("%s, %s, %s, %s, %s, %s, %s, %s, %s",
-					t_parent.oid, t_parent.objectName,
-					t_oid.oid.getObjectType(), t_oid.oid.getInstanceNumber(),
-					t_oid.objectName, tld.value, t_oid.units, tld.date,
-					tld.time));
-		}
+		/*
+		 * for (TrendLogData tld : t_oid.trendLog) {
+		 * writer.println(String.format("%s, %s, %s, %s, %s, %s, %s, %s, %s",
+		 * t_parent.oid, t_parent.objectName, t_oid.oid.getObjectType(),
+		 * t_oid.oid.getInstanceNumber(), t_oid.objectName, tld.value,
+		 * t_oid.units, tld.date, tld.time)); }
+		 */
 
 		for (OID child : t_oid.children) {
 			printObject(t_oid, child, writer);
@@ -974,39 +965,42 @@ public class Scan {
 		return current;
 	}
 
-	private void sendToDatabus(OID t_parent, OID t_oid, DatabusSender sender) {
+	private void sendToDatabus(OID t_parent, OID t_oid, DatabusSender sender,
+			String address) {
 		try {
-			sendToDatabusImpl(t_parent, t_oid, sender);
+			sendToDatabusImpl(t_parent, t_oid, sender, address);
 		} catch (Exception e) {
 			m_logger.log(Level.SEVERE, "Databus Exception", e);
 		}
 	}
 
-	private void sendToDatabusImpl(OID t_parent, OID t_oid, DatabusSender sender) {
+	private void sendToDatabusImpl(OID t_parent, OID t_oid,
+			DatabusSender sender, String address) {
 		if (t_oid != null && t_parent != null && sender != null) {
 			if (t_oid.presentValue != null && t_oid.oid.getObjectType() != null) {
 				sender.sendData(
-						BACNET_PREFIX + "-" + t_parent.oid.getInstanceNumber()
+						BACNET_PREFIX + t_parent.oid.getInstanceNumber()
 								+ noSpaces(t_oid.oid.getObjectType())
 								+ t_oid.oid.getInstanceNumber(), System
 								.currentTimeMillis(), new Double(
-								t_oid.presentValue));
+								t_oid.presentValue), t_oid.units, BACNET_PREFIX
+								+ t_parent.oid.getInstanceNumber(),
+						t_oid.objectName, t_parent.objectName, address);
 			}
 
-			for (TrendLogData tld : t_oid.trendLog) {
-				if (tld.value != null && t_oid.oid.getObjectType() != null) {
-					sender.sendData(
-							BACNET_PREFIX + "-"
-									+ t_parent.oid.getInstanceNumber()
-									+ noSpaces(t_oid.oid.getObjectType())
-									+ t_oid.oid.getInstanceNumber(),
-							convertToMillis(tld.date, tld.time), new Double(
-									tld.value));
-				}
-			}
+			/*
+			 * for (TrendLogData tld : t_oid.trendLog) { if (tld.value != null
+			 * && t_oid.oid.getObjectType() != null) { sender.sendData(
+			 * BACNET_PREFIX + t_parent.oid.getInstanceNumber() +
+			 * noSpaces(t_oid.oid.getObjectType()) +
+			 * t_oid.oid.getInstanceNumber(), convertToMillis(tld.date,
+			 * tld.time), new Double( tld.value), t_oid.units, BACNET_PREFIX +
+			 * t_parent.oid.getInstanceNumber(), t_oid.objectName,
+			 * t_parent.objectName, address); } }
+			 */
 
 			for (OID child : t_oid.children) {
-				sendToDatabus(t_oid, child, sender);
+				sendToDatabus(t_oid, child, sender, address);
 			}
 		}
 	}
@@ -1364,9 +1358,10 @@ public class Scan {
 
 		while (true) {
 			try {
-				RemoteDevice rd = remoteDevices.poll(10, TimeUnit.SECONDS);
-
+				RemoteDevice rd = remoteDevices.poll(1, TimeUnit.SECONDS);
+			
 				if (rd == null) {
+					m_logger.info("Remote Device Timeout\n");
 					break;
 				}
 
@@ -1514,33 +1509,45 @@ public class Scan {
 						}
 					}
 
-					try {
-						OID parent = buildObject(m_localDevice, rd,
-								rd.getObjectIdentifier(), pvs);
-						for (ObjectIdentifier oid : oids) {
-							try {
-								OID child = buildObject(m_localDevice, rd, oid,
-										pvs);
-								parent.children.add(child);
-							} catch (Exception e) {
-								m_logger.log(Level.FINE,
-										"Error creating child object", e);
+					if (rd.getObjectIdentifier().getObjectType()
+							.equals(ObjectType.trendLog) == false) {
+						try {
+							OID parent = buildObject(m_localDevice, rd,
+									rd.getObjectIdentifier(), pvs);
+							for (ObjectIdentifier oid : oids) {
+								if (oid.getObjectType().equals(
+										ObjectType.trendLog) == false) {
+									try {
+										OID child = buildObject(m_localDevice,
+												rd, oid, pvs);
+										parent.children.add(child);
+									} catch (Exception e) {
+										m_logger.log(Level.FINE,
+												"Error creating child object",
+												e);
+									}
+								}
 							}
-						}
 
-						if (DATABUS_URL == null) {
-							sendToDatabus(parent, parent, new DatabusSender());
-						} else {
-							sendToDatabus(parent, parent, new DatabusSender(
-									DATABUS_URL));
-						}
-						printObject(parent, parent, w);
-						com.google.gson.Gson gson = new com.google.gson.Gson();
-						jsonw.println(gson.toJson(parent));
+							if (DATABUS_URL == null) {
+								sendToDatabus(parent, parent,
+										new DatabusSender(), rd.getAddress()
+												.toString());
+							} else {
+								sendToDatabus(parent, parent,
+										new DatabusSender(DATABUS_URL), rd
+												.getAddress().toString());
+							}
+							printObject(parent, parent, w);
+							com.google.gson.Gson gson = new com.google.gson.Gson();
+							jsonw.println(gson.toJson(parent));
 
-					} catch (Exception e) {
-						m_logger.log(Level.FINE,
-								"Error creating parent objectWARNING", e);
+						} catch (Exception e) {
+							m_logger.log(Level.FINE,
+									"Error creating parent objectWARNING", e);
+						}
+					} else {
+						m_logger.finest("Skipping trend log: " + rd.toString());
 					}
 				} else {
 					m_logger.finest("Skipping device, no filter matches: "
@@ -1550,24 +1557,23 @@ public class Scan {
 			} catch (BACnetException e) {
 				m_logger.log(Level.WARNING, "BACnetException", e);
 			} catch (java.lang.InterruptedException e) {
-				m_logger.info("Done Scanning Devices");
-				break;
+				m_logger.info("Not Done Scanning Devices");
+			} catch (Exception e) {
+				m_logger.log(Level.SEVERE, "Other Exception!", e);
 			}
 		}
 
 		// Send CSV files to building agent
-		BASender ba_sender = new BASender();
-		com.google.gson.JsonObject jObj = new com.google.gson.JsonObject();
-		System.out.println("attempting to send data to boa");
-		System.out.println("CSV File is " + csv_outputname);
-		try {
-			String output = new Scanner(new File("./" + csv_outputname))
-					.useDelimiter("\\Z").next();
-			ba_sender.sendData(output);
-		} catch (Exception e) {
-			System.out
-					.println("could not open file to send: " + e.getMessage());
-		}
+		/*
+		 * BASender ba_sender = new BASender(); com.google.gson.JsonObject jObj
+		 * = new com.google.gson.JsonObject();
+		 * System.out.println("attempting to send data to boa");
+		 * System.out.println("CSV File is " + csv_outputname); try { String
+		 * output = new Scanner(new File("./" + csv_outputname))
+		 * .useDelimiter("\\Z").next(); ba_sender.sendData(output); } catch
+		 * (Exception e) { System.out .println("could not open file to send: " +
+		 * e.getMessage()); }
+		 */
 
 	}
 

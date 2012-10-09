@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -70,11 +71,27 @@ public class DatabusSender {
 			.getName());
 	String HOST_URL = "https://databus.nrel.gov:5502";
 	public static String GROUP_NAME = "bacnet";
-	public static String REGISTER_KEY = "register:7729155626:b1:7884682400432616546";
-	HashMap<String, String> keyLookup;
+	public static String REGISTER_KEY = "register:10768272987:b1:4814227944682770547";
+	public static String STREAM_KEY = "post:10768273024:b1:5456969792682001521";
+	public static String DEVICE_KEY = "post:10768273014:b1:2083447771105177062";
+	private static HashMap<String, String> keyLookup;
+	private static TreeSet<String> registeredDevices;
+
+	private synchronized HashMap<String, String> getKeyLookup() {
+		if (keyLookup == null) {
+			keyLookup = new HashMap<String, String>();
+		}
+		return keyLookup;
+	}
+
+	private synchronized TreeSet<String> getRegDevices() {
+		if (registeredDevices == null) {
+			registeredDevices = new TreeSet<String>();
+		}
+		return registeredDevices;
+	}
 
 	public DatabusSender() {
-		keyLookup = new HashMap<String, String>();
 	}
 
 	public DatabusSender(String DatabusUrl) {
@@ -82,7 +99,9 @@ public class DatabusSender {
 		this.HOST_URL = DatabusUrl;
 	}
 
-	public String registerStream(String tableName, String key) {
+	public String registerStream(String tableName, String key, String units,
+			String device, String streamDescription, String deviceDescription,
+			String address) {
 		HttpClient httpclient = new DefaultHttpClient();
 		if (HOST_URL.startsWith("https")) {
 			httpclient = WebClientDevWrapper.wrapClient(httpclient);
@@ -90,14 +109,44 @@ public class DatabusSender {
 
 		HttpPost httpPost = new HttpPost(HOST_URL + "/register/" + key);
 		String postKey = null;
+
 		try {
 			postKey = registerNewStream(httpclient, httpPost, tableName);
+			try {
+				postNewStream(httpclient, units, "false", "raw", "raw", "raw",
+						streamDescription, device, tableName);
+			} catch (RuntimeException e) {
+				e.printStackTrace();
+			}
+
+			if (getRegDevices().contains(device) == false) {
+				int spaceIndex = deviceDescription.indexOf(" ");
+				int uscoreIndex = deviceDescription.indexOf("_");
+				getRegDevices().add(device);
+				postNewDevice(
+						httpclient,
+						"NREL",
+						deviceDescription.startsWith("NWTC") ? "NWTC" : "STM",
+						deviceDescription.startsWith("CP")
+								|| deviceDescription.startsWith("FTU")
+								|| deviceDescription.startsWith("1ST") ? "RSF"
+								: (deviceDescription.startsWith("Garage") ? "Garage"
+										: (spaceIndex < uscoreIndex
+												&& spaceIndex != -1
+												|| uscoreIndex == -1 ? deviceDescription
+												.split(" ")[0]
+												: deviceDescription.split("_")[0])),
+						"unknown", "BACNet", deviceDescription, device, address);
+			}
 		} catch (RuntimeException e) {
 			postKey = regenerateKey(tableName, key);
 		}
 
 		if (postKey != null) {
-			keyLookup.put(tableName, postKey);
+			System.out.println("Updated " + tableName + " post key");
+			getKeyLookup().put(tableName, postKey);
+		} else {
+			System.out.println(tableName + " post key null!");
 		}
 
 		return postKey;
@@ -114,14 +163,17 @@ public class DatabusSender {
 		return regenerateKey(httpclient, httpPost, tableName);
 	}
 
-	public void sendData(String tableName, long time, double value) {
-		String postKey = keyLookup.get(tableName);
+	public void sendData(String tableName, long time, double value,
+			String units, String device, String streamDescription,
+			String deviceDescription, String address) {
+		String postKey = getKeyLookup().get(tableName);
 		if (postKey == null) {
-			postKey = registerStream(tableName, REGISTER_KEY);
+			postKey = registerStream(tableName, REGISTER_KEY, units, device,
+					streamDescription, deviceDescription, address);
 		}
 
 		HttpClient httpclient = new DefaultHttpClient();
-		if(HOST_URL.startsWith("https")) {
+		if (HOST_URL.startsWith("https")) {
 			httpclient = WebClientDevWrapper.wrapClient(httpclient);
 		}
 		HttpPost httpPost = new HttpPost(HOST_URL + "/postdata/" + postKey);
@@ -174,8 +226,80 @@ public class DatabusSender {
 
 	}
 
-	public String registerNewStream(HttpClient httpclient,
-			HttpPost httpPost, String tableName) {
+	public void postNewStream(HttpClient httpclient, String units,
+			String virtual, String aggInterval, String aggType,
+			String processed, String description, String device, String data) {
+		HttpPost httpPost = new HttpPost(HOST_URL + "/postdata/" + STREAM_KEY);
+
+		try {
+
+			Map<String, String> result = new HashMap<String, String>();
+			result.put("units", units + "");
+			result.put("virtual", virtual + "");
+			result.put("aggregationInterval", aggInterval + "");
+			result.put("aggregationType", aggType + "");
+			result.put("processed", processed + "");
+			result.put("description", description + "");
+			result.put("device", device + "");
+			result.put("stream", data + "");
+			ObjectMapper mapper = new ObjectMapper();
+			String json = mapper.writeValueAsString(result);
+
+			httpPost.setHeader("Content-Type", "application/json");
+			httpPost.setEntity(new StringEntity(json));
+			HttpResponse response2 = httpclient.execute(httpPost);
+
+			log.info("" + response2.getStatusLine());
+			if (response2.getStatusLine().getStatusCode() != 200) {
+				log.severe(response2.getEntity().toString());
+				throw new RuntimeException(response2.getEntity().toString());
+			}
+			HttpEntity entity = response2.getEntity();
+			EntityUtils.consume(entity);
+
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+
+	}
+
+	public void postNewDevice(HttpClient httpclient, String owner, String site,
+			String building, String endUse, String protocol,
+			String description, String id, String address) {
+		HttpPost httpPost = new HttpPost(HOST_URL + "/postdata/" + DEVICE_KEY);
+
+		try {
+			Map<String, String> result = new HashMap<String, String>();
+			result.put("owner", owner + "");
+			result.put("site", site + "");
+			result.put("building", building + "");
+			result.put("endUse", endUse + "");
+			result.put("protocol", protocol + "");
+			result.put("description", description + "");
+			result.put("id", id + "");
+			result.put("address", address + "");
+			ObjectMapper mapper = new ObjectMapper();
+			String json = mapper.writeValueAsString(result);
+
+			httpPost.setHeader("Content-Type", "application/json");
+			httpPost.setEntity(new StringEntity(json));
+			HttpResponse response2 = httpclient.execute(httpPost);
+
+			log.info("" + response2.getStatusLine());
+			if (response2.getStatusLine().getStatusCode() != 200) {
+				log.severe(response2.getEntity().toString());
+			}
+			HttpEntity entity = response2.getEntity();
+			EntityUtils.consume(entity);
+
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+
+	}
+
+	public String registerNewStream(HttpClient httpclient, HttpPost httpPost,
+			String tableName) {
 		String json = createJsonForRequest(tableName);
 		httpPost.setHeader("Content-Type", "application/json");
 		try {
@@ -206,8 +330,8 @@ public class DatabusSender {
 		}
 	}
 
-	public String regenerateKey(HttpClient httpclient,
-			HttpPost httpPost, String tableName) {
+	public String regenerateKey(HttpClient httpclient, HttpPost httpPost,
+			String tableName) {
 		httpPost.setHeader("Content-Type", "application/json");
 		try {
 			HttpResponse response2 = httpclient.execute(httpPost);
@@ -247,9 +371,10 @@ public class DatabusSender {
 		msg.setModelName(tableName);
 
 		List<DatasetColumnModel> cols = new ArrayList<DatasetColumnModel>();
-		createColumn(cols, "time", "BigInteger", "oei:timestamp", false, true);
-		createColumn(cols, "value", "BigDecimal", "oei:measured_value", false,
+		createColumn(cols, "time", "BigInteger", "oei:timestamp", true, true);
+		createColumn(cols, "value", "BigDecimal", "oei:measured_value", true,
 				false);
+		msg.setIsSearchable(false);
 		msg.setColumns(cols);
 
 		ObjectMapper mapper = new ObjectMapper();

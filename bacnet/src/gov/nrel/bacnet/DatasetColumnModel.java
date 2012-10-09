@@ -1,6 +1,5 @@
 package gov.nrel.bacnet;
 
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +33,10 @@ public class DatasetColumnModel {
 	@JsonProperty("isPrimaryKey")
     @XmlElement(name="isPrimaryKey")
     public boolean isPrimaryKey;
+
+	@JsonProperty("fkTableName")
+    @XmlElement(name="fkTableName")
+    public String foreignKeyTablename;
 	
 	@JsonProperty("semantics")
     @XmlElement(name="semantics")
@@ -51,6 +54,14 @@ public class DatasetColumnModel {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public String getForeignKeyTablename() {
+		return foreignKeyTablename;
+	}
+
+	public void setForeignKeyTablename(String foreignKeyTablename) {
+		this.foreignKeyTablename = foreignKeyTablename;
 	}
 
 	public String getDataType() {

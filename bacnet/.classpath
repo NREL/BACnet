@@ -16,5 +16,8 @@
 	<classpathentry kind="lib" path="C:/Users/abeach/Documents/bacnet/lib/httpcore.jar"/>
 	<classpathentry kind="lib" path="C:/Users/abeach/Documents/bacnet/lib/jackson-core-asl-1.9.8.jar"/>
 	<classpathentry kind="lib" path="C:/Users/abeach/Documents/bacnet/lib/jackson-mapper-asl-1.9.8.jar"/>
+	<classpathentry kind="lib" path="C:/Users/abeach/Documents/bacnet/lib/commons-logging-1.1.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/abeach/Documents/bacnet/lib/commons-logging-adapters-1.1.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/abeach/Documents/bacnet/lib/commons-logging-api-1.1.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

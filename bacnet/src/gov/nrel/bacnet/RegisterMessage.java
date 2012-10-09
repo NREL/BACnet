@@ -1,6 +1,5 @@
 package gov.nrel.bacnet;
 
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,6 +26,10 @@ public class RegisterMessage {
     @XmlElement(name="modelName")
     public String modelName;
 	
+	@JsonProperty("isSearchable")
+    @XmlElement(name="isSearchable")
+	private boolean isSearchable;
+	
 	@JsonProperty("groups")
 	@XmlElement(name="groups")
     public List<String> groups = new ArrayList<String>();
@@ -34,6 +37,14 @@ public class RegisterMessage {
 	@JsonProperty("columns")
     @XmlElement(name="columns")
     public List<DatasetColumnModel> columns = new ArrayList<DatasetColumnModel>();
+	
+	public boolean getIsSearchable() {
+		return isSearchable;
+	}
+
+	public void setIsSearchable(boolean isIndex) {
+		this.isSearchable = isIndex;
+	}
 	
 	public void setDatasetType(DatasetType type) {
 		this.datasetType = type;
