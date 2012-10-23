@@ -864,6 +864,7 @@ public class Scan {
 			DatabusSender sender, String address) {
 		if (t_oid != null && t_parent != null && sender != null) {
 			if (t_oid.presentValue != null && t_oid.oid.getObjectType() != null) {
+				Numbers n = new Numbers();
 				sender.sendData(
 						BACNET_PREFIX + t_parent.oid.getInstanceNumber()
 								+ noSpaces(t_oid.oid.getObjectType())
@@ -871,7 +872,7 @@ public class Scan {
 								.currentTimeMillis(), new Double(
 								t_oid.presentValue), t_oid.units, BACNET_PREFIX
 								+ t_parent.oid.getInstanceNumber(),
-						t_oid.objectName, t_parent.objectName, address);
+						t_oid.objectName, t_parent.objectName, address, n);
 			}
 
 			/*

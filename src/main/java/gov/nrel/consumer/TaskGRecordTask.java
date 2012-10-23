@@ -1,6 +1,7 @@
 package gov.nrel.consumer;
 
 import gov.nrel.bacnet.DatabusSender;
+import gov.nrel.bacnet.Numbers;
 import gov.nrel.consumer.beans.JsonObjectData;
 
 import java.util.List;
@@ -67,8 +68,9 @@ public class TaskGRecordTask implements Runnable {
 		String tableName = BACNET_PREFIX+d.getDeviceId()+d.getObjectType()+d.getObjectId();
 		String device = BACNET_PREFIX + d.getDeviceId();
 		String address = d.getAddress();
+		Numbers n = new Numbers();
 		sender.sendData(tableName, d.getTime(), d.getValue(), 
 						d.getUnits(), device, d.getObjectName(), 
-						d.getDeviceName(), address);
+						d.getDeviceName(), address, n);
 	}
 }
