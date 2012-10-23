@@ -1,0 +1,1 @@
+[{"instanceNumber":".*","networkNumber":".*","macAddress":".*","networkAddress":".*","timeBetweenScans":1000,"oidFilters":[{"objectType":"Binary .*","instanceNumber":"1.*","timeBetweenScans":2000}]}]   

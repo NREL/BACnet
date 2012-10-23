@@ -1,1 +1,0 @@
-pscp nicksjar.jar nlong@bld-eis.nrel.gov:/home/nlong/bacnet4j/
