@@ -473,8 +473,8 @@ public class Scan {
 		options.addOption("s", "scan", false, "Enable scanning feature");
 		options.addOption("S", "slave-device", false,
 				"Enable slave device feature");
-		options.addOption("n", "num-scans", true,
-				"Number of scans to perform, default is 1, -1 scans indefinitely");
+		options.addOption("T", "time-to-scan", true,
+				"Number of scans to perform, default is -1, -1 scans indefinitely");
 		options.addOption(
 				"t",
 				"time-between-updates",
@@ -497,7 +497,7 @@ public class Scan {
 		int min = -1;
 		int max = -1;
 		int time_between_updates = 10000;
-		int num_scans = 1;
+		int time_to_scan = -1;
 		int device_id = 1234;
 
 		String devname = null;
@@ -565,6 +565,7 @@ public class Scan {
 				}
 
 				if (jsonfile != null) {
+					jsonw = new java.io.PrintWriter(jsonfile, true);
 					com.google.gson.Gson gson = new com.google.gson.Gson();
 					Vector<OIDValue> exampleoids = new Vector<OIDValue>();
 					OIDValue i = new OIDValue();
@@ -590,7 +591,7 @@ public class Scan {
 
 			time_between_updates = Integer.parseInt(line.getOptionValue("t",
 					"10000"));
-			num_scans = Integer.parseInt(line.getOptionValue("n", "1"));
+			time_to_scan = Integer.parseInt(line.getOptionValue("T", "-1"));
 			device_id = Integer.parseInt(line.getOptionValue("i", "1234"));
 			scan = line.hasOption("s");
 			slave_device = line.hasOption("S");
@@ -770,15 +771,17 @@ public class Scan {
 		}
 
 		if ((slave_device == false && scan == false)
-				|| (slave_device == false && scan != false && num_scans == 0)) {
+				|| (slave_device == false && scan != false && time_to_scan == 0)) {
 			logger.severe("Nothing to do, no slave_device enabled and no scan enabled, or scan enabled and numscans set to 0");
 		}
 
 		java.util.Date lastSlaveUpdate = null;
+                java.util.Date startTime = new java.util.Date();
 
-		for (int i = 0;;) { // s != null && (i < num_scans || num_scans == -1);
-							// ++i) {
-			logger.info("Beginning scan " + (i++ + 1) + " of " + num_scans);
+		for (int i = 0; 
+                     s != null && (time_to_scan == -1 || (new java.util.Date()).getTime() - startTime.getTime() < time_to_scan ); 
+                     ++i) 
+                {
 
 			if (slave_device) {
 				boolean doupdate = false;
@@ -803,22 +806,32 @@ public class Scan {
 			// Thread.sleep(time_between_updates);
 		}
 
-		// logger.info("Scanning complete");
+                logger.info("Scanning complete");
 
-		// keep running if we have a slave_device
-		/*
-		 * while (slave_device) { boolean doupdate = false; java.util.Date now =
-		 * new java.util.Date(); if (lastSlaveUpdate == null) { doupdate = true;
-		 * } else { if (now.getTime() - lastSlaveUpdate.getTime() >=
-		 * time_between_updates) { doupdate = true; } }
-		 * 
-		 * if (doupdate) { logger.info("Updating slave device");
-		 * sd.updateValues(); lastSlaveUpdate = now; }
-		 * 
-		 * Thread.sleep(1000); }
-		 * 
-		 * logger.info("Shutting down"); localDevice.terminate();
-		 */
+                // keep running if we have a slave_device
+
+                while (slave_device) { 
+                  boolean doupdate = false; 
+                  java.util.Date now = new java.util.Date(); 
+                  
+                  if (lastSlaveUpdate == null) { 
+                    doupdate = true;
+                  } else { 
+                    if (now.getTime() - lastSlaveUpdate.getTime() >= time_between_updates) 
+                    { 
+                      doupdate = true; 
+                    } 
+                  }
+
+                  if (doupdate) { 
+                    logger.info("Updating slave device");
+                    sd.updateValues(); lastSlaveUpdate = now; 
+                  }
+
+                  Thread.sleep(1000); 
+                }
+
+                logger.info("Shutting down"); localDevice.terminate();
 	}
 
 	private void printObject(OID t_parent, OID t_oid, java.io.PrintWriter writer) {

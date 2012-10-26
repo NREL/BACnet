@@ -28,7 +28,7 @@ package com.serotonin.bacnet4j.event;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 
-import quicktime.app.event.EventDispatcher;
+//import quicktime.app.event.EventDispatcher;
 
 import com.serotonin.bacnet4j.Network;
 import com.serotonin.bacnet4j.RemoteDevice;
