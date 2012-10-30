@@ -1,5 +1,7 @@
 package gov.nrel.bacnet;
 
+import gov.nrel.consumer.beans.Numbers;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;

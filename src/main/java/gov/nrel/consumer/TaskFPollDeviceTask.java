@@ -1,11 +1,10 @@
 package gov.nrel.consumer;
 
-import gov.nrel.bacnet.Scan;
 import gov.nrel.consumer.beans.Counter;
+import gov.nrel.consumer.beans.DatabusBean;
 import gov.nrel.consumer.beans.Delay;
-import gov.nrel.consumer.beans.JsonObjectData;
 import gov.nrel.consumer.beans.MultiplyConfig;
-import gov.nrel.consumer.beans.ObjKey;
+import gov.nrel.consumer.beans.Stream;
 import gov.nrel.consumer.beans.Times;
 
 import java.math.BigInteger;
@@ -20,7 +19,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.logging.Level;
@@ -48,9 +46,10 @@ public class TaskFPollDeviceTask implements Runnable, Callable<Object> {
 	private int numTimesRun = 0;
 	private List<ObjectIdentifier> cachedOids = new ArrayList<ObjectIdentifier>();
 	private ScheduledFuture<?> future;
-	private Map<ObjKey, Encodable> properties = new HashMap<ObjKey, Encodable>();
 	private Map<ObjectIdentifier, Integer> intervals = new HashMap<ObjectIdentifier, Integer>();
-	private Map<ObjectIdentifier,MultiplyConfig> multipliers = new HashMap<ObjectIdentifier, MultiplyConfig>();
+	private Map<ObjectIdentifier, MultiplyConfig> multipliers = new HashMap<ObjectIdentifier, MultiplyConfig>();
+	private Map<ObjectIdentifier, Stream> streams = new HashMap<ObjectIdentifier, Stream>();
+	
 	private Random r = new Random(System.currentTimeMillis());
 	private DataPointWriter writer;
 	private OurExecutor exec;
@@ -171,7 +170,7 @@ public class TaskFPollDeviceTask implements Runnable, Callable<Object> {
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd-hh:mm:ss.SSS");
 		String time = fmt.format(new Date());
 		
-		List<JsonObjectData> data = new ArrayList<JsonObjectData>();
+		List<DatabusBean> data = new ArrayList<DatabusBean>();
 		Iterator<ObjectPropertyReference> propRefs = pvs.iterator();
 		while(propRefs.hasNext()) {
 			printDataPoint(propRefs.next(), pvs, time, curTime, data);
@@ -182,6 +181,7 @@ public class TaskFPollDeviceTask implements Runnable, Callable<Object> {
 		
 		log.info("launching databus writer.  active="+active+" queueCnt="+exec.getRecorderQueueCount());
 		TaskGRecordTask task = new TaskGRecordTask(data, writer);
+		
 		exec.getRecorderService().execute(task);
 	}
 
@@ -203,32 +203,22 @@ public class TaskFPollDeviceTask implements Runnable, Callable<Object> {
 	}
 
 	private void printDataPoint(ObjectPropertyReference next,
-			PropertyValues pvs, String time, long curTime, List<JsonObjectData> data) {
+			PropertyValues pvs, String time, long curTime, List<DatabusBean> data) {
 		
 		ObjectIdentifier oid = next.getObjectIdentifier();
 		Encodable presentValue = tryGetValue(oid, pvs, PropertyIdentifier.presentValue);
-		Encodable objectName = getProperty(oid, PropertyIdentifier.objectName);
-		Encodable units = getProperty(oid, PropertyIdentifier.units);
+		
+		String deviceId = TaskGRecordTask.BACNET_PREFIX+rd.getInstanceNumber();
+		String tableName = PropertiesReader.formTableName(deviceId, oid);
 
-		String type = oid.getObjectType()+"";
-		String noWhitepsaceType = type.replaceAll("\\s","");
-		
-		JsonObjectData d = new JsonObjectData();
-		d.setDeviceId(""+rd.getInstanceNumber());
-		d.setDeviceName(rd.getName());
-		String ipPortString = rd.getAddress().toIpPortString();
-		d.setAddress(""+ipPortString);
-		d.setNetwork(""+rd.getNetwork());
-		d.setObjectType(noWhitepsaceType);
-		d.setObjectId(""+oid.getInstanceNumber());
-		
 		String valStr = toString(presentValue);
 		Double dVal = null;
 		if(valStr != null)
 			dVal = new Double(valStr);
+		
+		DatabusBean d = new DatabusBean();
+		d.setTableName(tableName);
 		d.setValue(dVal);
-		d.setObjectName(toString(objectName));
-		d.setUnits(toString(units));
 		d.setTime(curTime);
 		
 		data.add(d);
@@ -289,17 +279,6 @@ public class TaskFPollDeviceTask implements Runnable, Callable<Object> {
 	}
 	public ScheduledFuture<?> getFuture() {
 		return future;
-	}
-
-	public void addProperty(ObjectIdentifier oid, PropertyIdentifier id,
-			Encodable value) {
-		ObjKey k = new ObjKey(oid, id);
-		properties.put(k, value);
-	}
-	
-	public Encodable getProperty(ObjectIdentifier oid, PropertyIdentifier id) {
-		ObjKey k = new ObjKey(oid, id);
-		return properties.get(k);
 	}
 
 	public void addInterval(ObjectIdentifier oid, int pollInSeconds) {

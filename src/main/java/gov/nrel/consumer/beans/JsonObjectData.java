@@ -9,6 +9,7 @@ import com.serotonin.bacnet4j.type.primitive.ObjectIdentifier;
 public class JsonObjectData {
 
 	private Boolean justInstance = false;
+	private String tableName;
 	private String deviceId;
 	private String deviceName;
 	private String address;
@@ -122,6 +123,13 @@ public class JsonObjectData {
 	}
 	public long getTime() {
 		return time;
+	}
+	
+	public String getTableName() {
+		return tableName;
+	}
+	public void setTableName(String tableName) {
+		this.tableName = tableName;
 	}
 
 }

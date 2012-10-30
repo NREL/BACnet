@@ -52,7 +52,7 @@ public class TaskERunTaskENow implements Runnable, Callable<Object> {
 			st.setCounter(latch);
 			schedule(st);
 		}
-		
+
 		log.info("All devices have been scheduled="+devices.size());
 		return null;
 	}

@@ -5,7 +5,6 @@ import gov.nrel.consumer.beans.JsonAllFilters;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -102,14 +101,15 @@ public class TaskBDiscoverer implements Runnable, Callable<Object> {
 		String time = fmt.format(new Date());
 		String fileName = "../logs/jsonInMemory-"+time+".json";
 		
+		int counter = 0;
 		ScheduledExecutorService svc = exec.getScheduledSvc();
 		log.info("partitions size="+partitions.size()+" numThreads="+config.getNumThreads()+" numDevices="+devices.size());
-		List<TaskFPollDeviceTask> failures = Collections.synchronizedList(new ArrayList<TaskFPollDeviceTask>());
 		CountDownLatch latch = new CountDownLatch(partitions.size()); //+1 is for the failures
 		for(List<TaskFPollDeviceTask> partition : partitions) {
 			log.info("Scheduling partition to run immediately.  size="+partition.size());
-			Runnable taskC = new TaskCReadBasicProps(m_localDevice, exec, partition, failures, deviceConfig, fileName, latch);
+			Runnable taskC = new TaskCReadBasicProps(counter, m_localDevice, exec, partition, deviceConfig, latch, dataPointWriter);
 			svc.schedule(taskC, 0, TimeUnit.SECONDS);
+			counter++;
 		}
 
 //		//NOTE: We KNOW the thread count so this runs 

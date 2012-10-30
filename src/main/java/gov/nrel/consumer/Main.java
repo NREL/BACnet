@@ -16,7 +16,9 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -60,7 +62,9 @@ public class Main {
 
 	private void start(Config config) throws IOException {
 		LinkedBlockingQueue<Runnable> queue = new LinkedBlockingQueue<Runnable>(1000);
-		recorderSvc = new ThreadPoolExecutor(20, 20, 120, TimeUnit.SECONDS, queue);
+		RejectedExecutionHandler rejectedExec = new RejectedExecHandler();
+		recorderSvc = new ThreadPoolExecutor(20, 20, 120, TimeUnit.SECONDS, queue, rejectedExec );
+		
 		svc = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1);
 		execSvc = Executors.newFixedThreadPool(config.getNumThreads());
 		OurExecutor exec = new OurExecutor(svc, execSvc, recorderSvc);
@@ -137,7 +141,14 @@ public class Main {
 			d.init();
 		}
 		
-		DataPointWriter writer = new DataPointWriter();
+		String streamTable = "bacnetstreamMeta";
+		String deviceTable = "bacnetdeviceMeta";
+		String groupPostKey = "post:12648255374:b1:7800475230981326433";
+		String groupGetKey = "get:12646042734:b1:5607271170139410779";
+
+		logger.info("getkey="+groupGetKey);
+		DatabusSender sender = new DatabusSender(groupPostKey, groupGetKey, deviceTable, streamTable, recorderSvc);
+		DataPointWriter writer = new DataPointWriter(sender);
 		
 		logger.info("Kicking off scanner object to run every "+config.getScanInterval()+" hours with broadcasts every "+config.getBroadcastInterval()+" seconds");
 		TaskADiscoverAll all = new TaskADiscoverAll(localDevice, exec, config, filters, writer);

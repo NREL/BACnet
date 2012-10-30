@@ -1,13 +1,10 @@
 package gov.nrel.consumer;
 
+import gov.nrel.consumer.beans.Device;
 import gov.nrel.consumer.beans.JsonAllFilters;
-import gov.nrel.consumer.beans.JsonObjectData;
+import gov.nrel.consumer.beans.Stream;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -18,13 +15,10 @@ import com.google.gson.Gson;
 import com.serotonin.bacnet4j.LocalDevice;
 import com.serotonin.bacnet4j.RemoteDevice;
 import com.serotonin.bacnet4j.exception.BACnetException;
-import com.serotonin.bacnet4j.type.Encodable;
-import com.serotonin.bacnet4j.type.constructed.ObjectPropertyReference;
 import com.serotonin.bacnet4j.type.constructed.SequenceOf;
 import com.serotonin.bacnet4j.type.enumerated.PropertyIdentifier;
 import com.serotonin.bacnet4j.type.primitive.ObjectIdentifier;
 import com.serotonin.bacnet4j.util.PropertyReferences;
-import com.serotonin.bacnet4j.util.PropertyValues;
 
 public class TaskCReadBasicProps implements Runnable, Callable<Object> {
 
@@ -36,19 +30,22 @@ public class TaskCReadBasicProps implements Runnable, Callable<Object> {
 	private String fileName;
 	private LocalDevice m_localDevice;
 	private CountDownLatch latch;
-	private List<TaskFPollDeviceTask> failures;
-
 	private OurExecutor exec;
+	private DataPointWriter writer;
+
+	private PropertiesReader propReader;
+	private String id;
 	
-	public TaskCReadBasicProps(LocalDevice local, OurExecutor exec, List<TaskFPollDeviceTask> devices, List<TaskFPollDeviceTask> failures,
-			JsonAllFilters deviceConfig2, String fileName, CountDownLatch latch) {
+	public TaskCReadBasicProps(int counter, LocalDevice local, OurExecutor exec, List<TaskFPollDeviceTask> devices,
+			JsonAllFilters deviceConfig2, CountDownLatch latch, DataPointWriter dataPointWriter) {
+		this.id = "task"+counter;
 		this.m_localDevice = local;
+		this.propReader = new PropertiesReader(local);
 		this.exec = exec;
 		this.devices = devices;
 		this.deviceConfig = deviceConfig2;
-		this.fileName = fileName;
 		this.latch = latch;
-		this.failures = failures;
+		this.writer = dataPointWriter;
 	}
 
 	@Override
@@ -61,66 +58,33 @@ public class TaskCReadBasicProps implements Runnable, Callable<Object> {
 	public Object call() throws Exception {
 		try {
 			long start = System.currentTimeMillis();
-			log.info("SCANNING ALL DEVICES FOR OIDS IN THREAD devices size="+devices.size());
-			List<JsonObjectData> data = new ArrayList<JsonObjectData>();
+			log.info(id+"SCANNING ALL DEVICES FOR OIDS IN THREAD devices size="+devices.size());
 			int counter = 0;
 			for(TaskFPollDeviceTask st : devices) {
 				counter++;
-				processDevice(st, data, counter);
+				processDevice(st, counter);
 			}
 			long total = System.currentTimeMillis() - start;
-			log.info("SCANNING FINISHED, took time="+total+"ms  dataobjects size="+data.size());
+			log.info(id+"SCANNING FINISHED, took time="+total+"ms  dataobjects size="+devices.size());
 	
-			writeToFile(data, gson, fileName);
-			
 			return null;
 		} finally {
 			latch.countDown();
-			log.info("latch countdown.  count="+latch.getCount());
+			log.info(id+"latch countdown.  count="+latch.getCount());
 		}
 	}
 
-	private static synchronized void writeToFile(List<JsonObjectData> data, Gson gson, String fileName) {
-		FileWriter out = null;
-		try {
-			File f = new File(fileName);
-			if(!f.exists())
-				f.createNewFile();
-			out = new FileWriter(f, true);
-			
-			for(JsonObjectData d : data) {
-				String json = gson.toJson(d);
-				out.write(json+"\n");
-			}
-		} catch(Exception e) {
-			log.log(Level.WARNING, "could not log devices we have in memory", e);
-		} finally {
-			try {
-				if(out != null)
-					out.close();
-			} catch (IOException e) {
-				log.log(Level.WARNING, "could not close file", e);
-			}
-		}
-	}
-
-	private void processDevice(TaskFPollDeviceTask st, List<JsonObjectData> data, int counter2) {
+	private void processDevice(TaskFPollDeviceTask st, int counter2) {
 		long time = System.currentTimeMillis();
-		JsonObjectData d = new JsonObjectData();
-		d.setJustInstance(true);
-		d.setInterval(-1); //we never query presentValue of the device(does it have one??...should we do a match with it???)
-		data.add(d);
 		try {
-			processDeviceImpl(st, d, data, counter2);
+			processDeviceImpl(st, counter2);
 		} catch(Exception e) {
 			long end = System.currentTimeMillis() - time;
-			d.setError(e.getClass().getSimpleName());
 			log.log(Level.WARNING, "Exception on device="+st.getRemoteDevice()+".  method took time="+end+"ms", e);
 		}
 	}
 
-	private void processDeviceImpl(TaskFPollDeviceTask st, JsonObjectData d, List<JsonObjectData> data, int counter2) throws BACnetException {
-		setDeviceProps(st, d);
+	private void processDeviceImpl(TaskFPollDeviceTask st, int counter2) throws BACnetException {
 //		if(rd.getNetwork() != null) {
 //			d.setNetworkAddress(rd.getNetwork().getNetworkAddressDottedString());
 //			d.setNetworkNumber(""+rd.getNetwork().getNetworkNumber());
@@ -129,21 +93,54 @@ public class TaskCReadBasicProps implements Runnable, Callable<Object> {
 //			d.setMacAddress(""+rd.getAddress().getMacAddress());
 //			d.setMacNetworkNumber(""+rd.getAddress().getNetworkNumber());
 //		}
-		
-		List<ObjectIdentifier> oids = readInDeviceOidsAndBaseProperties(st, d, data, counter2);
+		List<Stream> streams = new ArrayList<Stream>();
+		Device dev = new Device();
+		List<ObjectIdentifier> oids = readInDeviceOidsAndBaseProperties(st, streams, dev, id, counter2);
+
+		log.info(id+"posting streams="+streams.size()+" c="+counter2);
+		DatabusSender sender = writer.getSender();
+		for(Stream str : streams) {
+			sender.postNewStream(str, dev, "bacnet", id);
+		}
+
 		st.setCachedOids(oids);
 	}
 
-	private void setDeviceProps(TaskFPollDeviceTask st, JsonObjectData d) {
-		RemoteDevice rd = st.getRemoteDevice();
-		d.setDeviceId(""+rd.getInstanceNumber());
-		d.setNetwork(""+rd.getNetwork());
-		d.setAddress(""+rd.getAddress());
-		d.setDeviceName(rd.getName());
+	private void setDeviceProps(RemoteDevice rd, Device dev) {
+		String deviceDescription = rd.getName();
+		int spaceIndex = deviceDescription.indexOf(" ");
+		int uscoreIndex = deviceDescription.indexOf("_");
+		String site = deviceDescription.startsWith("NWTC") ? "NWTC" : "STM";
+		String bldg = deviceDescription.startsWith("CP")
+				|| deviceDescription.startsWith("FTU")
+				|| deviceDescription.startsWith("1ST") ? "RSF"
+				: (deviceDescription.startsWith("Garage") ? "Garage"
+						: (spaceIndex < uscoreIndex
+								&& spaceIndex != -1
+								|| uscoreIndex == -1 ? deviceDescription
+								.split(" ")[0]
+								: deviceDescription.split("_")[0]));
+		
+		String endUse = "unknown";
+		String protocol = "BACNet";
+
+		String deviceId = TaskGRecordTask.BACNET_PREFIX+rd.getInstanceNumber();
+		
+		log.info("setting up deviceobject="+deviceId);
+		
+		dev.setDeviceId(deviceId);
+		dev.setDeviceDescription(deviceDescription);
+		dev.setOwner("NREL");
+		dev.setSite(site);
+		dev.setBldg(bldg);
+		dev.setEndUse(endUse);
+		dev.setProtocol(protocol);
+		if(rd.getAddress() != null)
+			dev.setAddress(rd.getAddress().toIpPortString());
 	}
 
 	@SuppressWarnings("unchecked")
-	private List<ObjectIdentifier> readInDeviceOidsAndBaseProperties(TaskFPollDeviceTask task, JsonObjectData devData, List<JsonObjectData> data, int counter2)
+	private List<ObjectIdentifier> readInDeviceOidsAndBaseProperties(TaskFPollDeviceTask task, List<Stream> streams, Device dev, String id2, int counter2)
 			throws BACnetException {
 		RemoteDevice d = task.getRemoteDevice();
 		long startExt = System.currentTimeMillis();
@@ -152,28 +149,32 @@ public class TaskCReadBasicProps implements Runnable, Callable<Object> {
 		m_localDevice.getExtendedDeviceInformation(d);
 		long total = System.currentTimeMillis()-startExt;
 
-		devData.setDeviceName(d.getName());
-		
+		setDeviceProps(d, dev);
+
 		long startOid = System.currentTimeMillis();
-		List<ObjectIdentifier> cachedOids = ((SequenceOf<ObjectIdentifier>) m_localDevice
+		List<ObjectIdentifier> allOids = ((SequenceOf<ObjectIdentifier>) m_localDevice
 					.sendReadPropertyAllowNull(d,
 							d.getObjectIdentifier(),
 							PropertyIdentifier.objectList)).getValues();
 		long totalOid = System.currentTimeMillis()-startOid;
-		
-		List<ObjectIdentifier> oidsToPoll = new ArrayList<ObjectIdentifier>();
+
 		PropertyReferences refs = new PropertyReferences();
+		List<ObjectIdentifier> oidsToPoll = setupRefs(task, allOids, refs);
+		
+		long startProps = System.currentTimeMillis();
+		boolean singleReadSuccess = true;
+		if(refs.size() > 0)
+			singleReadSuccess = propReader.readAllProperties(task, refs, oidsToPoll, dev, streams, id);
+		long totalProps = System.currentTimeMillis()-startProps;
+		
+		log.info(id+"device count="+counter2+" device="+d.getInstanceNumber()+"refreshing oid information ext dev info="+total+"ms getting oids="+totalOid+"ms  props="+totalProps+"ms singleReadSuccess="+singleReadSuccess);
+		return oidsToPoll;
+	}
+
+	private List<ObjectIdentifier> setupRefs(TaskFPollDeviceTask task, List<ObjectIdentifier> cachedOids, PropertyReferences refs) {
+		List<ObjectIdentifier> oidsToPoll = new ArrayList<ObjectIdentifier>();
 		for(ObjectIdentifier oid : cachedOids) {
-			JsonObjectData objD = new JsonObjectData();
-			data.add(objD);
-			setDeviceProps(task, objD);
-			
-			objD.setObjectId(""+oid.getInstanceNumber());
-			objD.setObjectType(""+oid.getObjectType());
-			
 			int pollInSeconds = deviceConfig.getPollingInterval(task.getRemoteDevice(), oid);
-			objD.setInterval(pollInSeconds);
-			
 			if(pollInSeconds > 0) {
 				task.addInterval(oid, pollInSeconds);
 				refs.add(oid, PropertyIdentifier.units);
@@ -181,64 +182,7 @@ public class TaskCReadBasicProps implements Runnable, Callable<Object> {
 				oidsToPoll.add(oid);
 			}
 		}
-		
-		long startProps = System.currentTimeMillis();
-		
-		boolean singleReadSuccess = true;
-		if(refs.size() > 0)
-			singleReadSuccess = readAllProperties(task, refs);
-		
-		long totalProps = System.currentTimeMillis()-startProps;
-		
-		log.info("device count="+counter2+" refreshing oid information ext dev info="+total+"ms getting oids="+totalOid+"ms  props="+totalProps+"ms singleReadSuccess="+singleReadSuccess);
 		return oidsToPoll;
 	}
-	
-	private boolean readAllProperties(TaskFPollDeviceTask task, PropertyReferences refs) {
-		try {
-			readAndFillInProps(task, refs);
-			return true;
-		} catch(BACnetException e) {
-			log.fine("Trying to recover from read failure by breaking up reads");
-			//A frequent failure is reading tooooo many properties so now let's read 10 at a time from the device instead..
-			readProperties(task, refs);
-			return false;
-		}
-	}
 
-	private void readProperties(TaskFPollDeviceTask task, PropertyReferences refs) {
-		//TODO: NEED to play with this partition size here..... from 1 to 10 to 50 maybe....
-		List<PropertyReferences> props = refs.getPropertiesPartitioned(1);
-		PropertyReferences theRefs = null;
-		try {
-			for(PropertyReferences propRefs : props) {
-				theRefs = propRefs;
-				readAndFillInProps(task, theRefs);
-			}
-		} catch(Exception e) {
-			log.log(Level.WARNING, "Exception reading props size="+theRefs.size()+" props="+theRefs.getProperties().keySet()+" for device="+task.getRemoteDevice(), e);
-		}
-	}
-
-	private void readAndFillInProps(TaskFPollDeviceTask task,
-			PropertyReferences theRefs) throws BACnetException {
-		PropertyValues propVals = m_localDevice.readProperties(task.getRemoteDevice(), theRefs);
-		
-		//Here we have an iterator of units and objectNames....
-		Iterator<ObjectPropertyReference> iterator = propVals.iterator();
-		while(iterator.hasNext()) {
-			ObjectPropertyReference ref = iterator.next();
-			ObjectIdentifier oid = ref.getObjectIdentifier();
-			PropertyIdentifier id = ref.getPropertyIdentifier();
-			
-			try {
-				Encodable value = propVals.get(ref);
-				task.addProperty(oid, id, value);
-			} catch(Exception e) {
-				//Tons of stuff has no units and some stuff has no objectNames
-				if(log.isLoggable(Level.FINE))
-					log.log(Level.FINE, "Exception reading prop oid="+oid+" from id="+id+" device="+task.getRemoteDevice(), e);
-			}
-		}
-	}
 }

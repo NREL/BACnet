@@ -22,6 +22,8 @@
  */
 package gov.nrel.bacnet;
 
+import gov.nrel.consumer.beans.Numbers;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;

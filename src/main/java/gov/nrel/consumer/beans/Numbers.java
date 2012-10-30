@@ -1,4 +1,4 @@
-package gov.nrel.bacnet;
+package gov.nrel.consumer.beans;
 
 public class Numbers {
 

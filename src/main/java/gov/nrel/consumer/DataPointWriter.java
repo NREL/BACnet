@@ -11,8 +11,18 @@ import java.util.logging.Logger;
 public class DataPointWriter {
 
 	private static final Logger log = Logger.getLogger(DataPointWriter.class.getName());
+	
+	private DatabusSender sender;
 	private FileWriter jsonw;
 	private int counter = 0;
+	
+	public DataPointWriter(DatabusSender sender) {
+		this.sender = sender;
+	}
+	
+	public DatabusSender getSender() {
+		return sender;
+	}
 	
 	public synchronized void addDataPoint(String json) {
 		try {
