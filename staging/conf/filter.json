@@ -1,926 +1,926 @@
 {
- "filters": [ {
- "deviceId": ".*",
-"objectType": "Vendor Specific.*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "2",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "3",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "4",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "5",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "6",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "8",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "9",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "10",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "11",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "12",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "13",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "14",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "15",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "19",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "21",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "22",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "23",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "24",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "25",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "26",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "31",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "32",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "33",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "34",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "35",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "36",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "37",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "51",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "52",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "53",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "54",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "55",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "56",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "57",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "81",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "90",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "110",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "3000",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "3304",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "3500",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "3501",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "3502",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7600",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7801",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7802",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7803",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7804",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7805",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7806",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7807",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7808",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7809",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7810",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7811",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7812",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7813",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7814",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7815",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7816",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7817",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7818",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7819",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7820",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7821",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7823",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7824",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7825",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7826",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7827",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7828",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7829",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "7830",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "8701",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "8902",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "8903",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "8904",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "8905",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "8906",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "8907",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "8908",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "8909",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "8910",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "8911",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "8912",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "9402",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "9403",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "11417",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "11418",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "13101",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "13102",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "13201",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "13202",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "13203",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "13204",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "13205",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "13206",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "13207",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "13208",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "13209",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "13210",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "13301",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "13302",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "13303",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "13304",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "13305",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "13306",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "13307",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "14401",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "14402",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "14403",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "14601",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "14602",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "14701",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "14702",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "10006",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "10011",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "10012",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "10013",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "20002",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "20003",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "20004",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": "20005",
-"objectType": ".*",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": ".*",
-"objectType": "Analog Input",
-"objectId": ".*",
-"interval": "60" 
-},
-{
- "deviceId": ".*",
-"objectType": "Binary Input",
-"objectId": ".*",
-"interval": "60" 
-},
-{
- "deviceId": ".*",
-"objectType": "Multi-state Input",
-"objectId": ".*",
-"interval": "60" 
-},
-{
- "deviceId": ".*",
-"objectType": "Loop",
-"objectId": ".*",
-"interval": "60" 
-},
-{
- "deviceId": ".*",
-"objectType": "Analog Output",
-"objectId": ".*",
-"interval": "60" 
-},
-{
- "deviceId": ".*",
-"objectType": "Binary Output",
-"objectId": ".*",
-"interval": "60" 
-},
-{
- "deviceId": ".*",
-"objectType": "Multi-state Output",
-"objectId": ".*",
-"interval": "60" 
-},
-{
- "deviceId": ".*",
-"objectType": "Analog Value",
-"objectId": ".*",
-"interval": "300" 
-},
-{
- "deviceId": ".*",
-"objectType": "Binary Value",
-"objectId": ".*",
-"interval": "300" 
-},
-{
- "deviceId": ".*",
-"objectType": "Multi-state Value",
-"objectId": ".*",
-"interval": "300" 
-},
-{
- "deviceId": ".*",
-"objectType": "Schedule",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": ".*",
-"objectType": "Calendar",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": ".*",
-"objectType": "Command",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": ".*",
-"objectType": "Device",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": ".*",
-"objectType": "Event Enrollment",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": ".*",
-"objectType": "File",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": ".*",
-"objectType": "Group",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": ".*",
-"objectType": "Notification Class",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": ".*",
-"objectType": "Program",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": ".*",
-"objectType": "Averaging",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": ".*",
-"objectType": "Trend Log",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": ".*",
-"objectType": "Life Safety Point",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": ".*",
-"objectType": "Life Safety Zone",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": ".*",
-"objectType": "Accumulator",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": ".*",
-"objectType": "Pulse Converter",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": ".*",
-"objectType": "Event Log",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": ".*",
-"objectType": "Trend Log Multiple",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": ".*",
-"objectType": "Load Control",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": ".*",
-"objectType": "Structured View",
-"objectId": ".*",
-"interval": "-1" 
-},
-{
- "deviceId": ".*",
-"objectType": "Access Door",
-"objectId": ".*",
-"interval": "-1" 
-} ] 
+	"filters": [{
+		"deviceId": ".*",
+		"objectType": "Vendor Specific.*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "2",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "3",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "4",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "5",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "6",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "8",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "9",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "10",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "11",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "12",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "13",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "14",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "15",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "19",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "21",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "22",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "23",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "24",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "25",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "26",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "31",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "32",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "33",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "34",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "35",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "36",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "37",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "51",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "52",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "53",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "54",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "55",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "56",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "57",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "81",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "90",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "110",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "3000",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "3304",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "3500",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "3501",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "3502",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7600",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7801",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7802",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7803",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7804",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7805",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7806",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7807",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7808",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7809",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7810",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7811",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7812",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7813",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7814",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7815",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7816",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7817",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7818",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7819",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7820",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7821",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7823",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7824",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7825",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7826",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7827",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7828",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7829",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "7830",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "8701",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "8902",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "8903",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "8904",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "8905",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "8906",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "8907",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "8908",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "8909",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "8910",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "8911",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "8912",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "9402",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "9403",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "11417",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "11418",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "13101",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "13102",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "13201",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "13202",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "13203",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "13204",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "13205",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "13206",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "13207",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "13208",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "13209",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "13210",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "13301",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "13302",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "13303",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "13304",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "13305",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "13306",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "13307",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "14401",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "14402",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "14403",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "14601",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "14602",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "14701",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "14702",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "10006",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "10011",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "10012",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "10013",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "20002",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "20003",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "20004",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": "20005",
+		"objectType": ".*",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Analog Input",
+		"objectId": ".*",
+		"interval": "60"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Binary Input",
+		"objectId": ".*",
+		"interval": "60"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Multi-state Input",
+		"objectId": ".*",
+		"interval": "60"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Loop",
+		"objectId": ".*",
+		"interval": "60"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Analog Output",
+		"objectId": ".*",
+		"interval": "60"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Binary Output",
+		"objectId": ".*",
+		"interval": "60"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Multi-state Output",
+		"objectId": ".*",
+		"interval": "60"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Analog Value",
+		"objectId": ".*",
+		"interval": "300"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Binary Value",
+		"objectId": ".*",
+		"interval": "300"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Multi-state Value",
+		"objectId": ".*",
+		"interval": "300"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Schedule",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Calendar",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Command",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Device",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Event Enrollment",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "File",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Group",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Notification Class",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Program",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Averaging",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Trend Log",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Life Safety Point",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Life Safety Zone",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Accumulator",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Pulse Converter",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Event Log",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Trend Log Multiple",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Load Control",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Structured View",
+		"objectId": ".*",
+		"interval": "-1"
+	},
+	{
+		"deviceId": ".*",
+		"objectType": "Access Door",
+		"objectId": ".*",
+		"interval": "-1"
+	}]
 }
