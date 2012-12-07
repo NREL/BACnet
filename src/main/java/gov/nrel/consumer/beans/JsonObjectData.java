@@ -114,9 +114,16 @@ public class JsonObjectData {
 	}
 	
 	public void init() {
-		deviceIdPattern = Pattern.compile(deviceId);
-		objectTypePattern = Pattern.compile(objectType);
-		objectIdPattern = Pattern.compile(objectId);
+		deviceIdPattern = compile(deviceId);
+		objectTypePattern = compile(objectType);
+		objectIdPattern = compile(objectId);
+	}
+	private Pattern compile(String pattern) {
+		try {
+			return Pattern.compile(pattern);
+		} catch(Exception e) {
+			throw new RuntimeException("Could not compile pattern="+pattern+" PLEASE fix your configuration file filter.json", e);
+		}
 	}
 	public void setTime(long cur) {
 		this.time = cur;
