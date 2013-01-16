@@ -56,9 +56,6 @@ public class DatabusSender {
 	private static final Logger log = Logger.getLogger(DatabusSender.class
 			.getName());
 
-	public static final int PORT = 5502;
-	//public static final String HOST_URL = "https://databus.nrel.gov:"+PORT;
-
 	private DefaultHttpClient httpclient;
 	private ObjectMapper mapper = new ObjectMapper();
 	private String deviceTable;
@@ -72,9 +69,12 @@ public class DatabusSender {
 	private Long initialStart;
 
 	private String hostUrl;
+
+	private int port;
 	
 	public DatabusSender(String username, String key, String deviceTable, String streamTable, ExecutorService recorderSvc, int port) {
 		this.hostUrl = "https://databus.nrel.gov:"+port;
+		this.port = port;
 		this.deviceTable = deviceTable;
 		this.streamTable = streamTable;
 		PoolingClientConnectionManager mgr = new PoolingClientConnectionManager();
@@ -275,7 +275,7 @@ public class DatabusSender {
 		cols.add(col);
 	}
 
-	public static DefaultHttpClient createSecureOne(PoolingClientConnectionManager mgr) {
+	public DefaultHttpClient createSecureOne(PoolingClientConnectionManager mgr) {
 		try {
 			SSLContext ctx = SSLContext.getInstance("TLS");
 			X509TrustManager tm = new X509TrustManager() {
@@ -321,7 +321,7 @@ public class DatabusSender {
 			SSLSocketFactory ssf = new SSLSocketFactory(ctx);
 			ssf.setHostnameVerifier(verifier);
 			SchemeRegistry sr = mgr.getSchemeRegistry();
-			sr.register(new Scheme("https", ssf, PORT));
+			sr.register(new Scheme("https", ssf, port));
 			return new DefaultHttpClient(mgr);
 		} catch (Exception ex) {
 			throw new RuntimeException(ex);
