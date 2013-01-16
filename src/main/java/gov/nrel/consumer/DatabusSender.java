@@ -89,7 +89,7 @@ public class DatabusSender {
 		}
 		
 		log.info("hostUrl="+hostUrl);
-		meta.initialize(username, key, hostUrl, httpclient, deviceTable, streamTable, recorderSvc);
+		meta.initialize(username, key, host, port, isSecure, httpclient, deviceTable, streamTable, recorderSvc);
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })

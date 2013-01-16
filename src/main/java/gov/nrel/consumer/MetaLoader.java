@@ -39,13 +39,21 @@ public class MetaLoader {
 	private ExecutorService recorderSvc;
 	private String username;
 	private String key;
+	private String host;
+	private int port;
 	private String hostUrl;
+	private String mode;
 	
-	public void initialize(String username, String key, String hostUrl, DefaultHttpClient httpclient, String deviceTable, String streamTable, ExecutorService recorderSvc) {
+	public void initialize(String username, String key, String host, int port, boolean isSecure, DefaultHttpClient httpclient, String deviceTable, String streamTable, ExecutorService recorderSvc) {
 		this.username = username;
 		this.key = key;
 		this.recorderSvc = recorderSvc;
-		this.hostUrl = hostUrl;
+		this.host = host;
+		this.port = port;
+		this.mode = "https";
+		if(!isSecure)
+			mode = "http";
+		this.hostUrl = mode+"//"+host+":"+port;
 		
 		//need to read in all stuff here
 		loadDevices(httpclient, deviceTable, streamTable);
@@ -163,7 +171,7 @@ public class MetaLoader {
 	}
 	
 	BasicHttpContext setupPreEmptiveBasicAuth(DefaultHttpClient httpclient) {
-		HttpHost targetHost = new HttpHost("databus.nrel.gov", 5502, "https"); 
+		HttpHost targetHost = new HttpHost(host, port, mode); 
 		httpclient.getCredentialsProvider().setCredentials(
 		        new AuthScope(targetHost.getHostName(), targetHost.getPort()), 
 		        new UsernamePasswordCredentials(username, key));
