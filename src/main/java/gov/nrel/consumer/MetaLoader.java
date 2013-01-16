@@ -135,7 +135,9 @@ public class MetaLoader {
 		String theString = "";
 		try {
 			BasicHttpContext ctx = setupPreEmptiveBasicAuth(httpclient);
-			HttpGet get = new HttpGet(hostUrl+"/api/getdataV1/"+sql);
+			String getUrl = hostUrl+"/api/getdataV1/"+sql;
+			log.info("getUrl for load="+getUrl);
+			HttpGet get = new HttpGet(getUrl);
 			long t1 = System.currentTimeMillis();
 			HttpResponse resp = httpclient.execute(get, ctx);
 			

@@ -148,7 +148,7 @@ public class Main {
 		String key = "941RCGC.B2.1WWXM5WZVA5YL";
 		
 		logger.info("user="+username+" key="+key);
-		DatabusSender sender = new DatabusSender(username, key, deviceTable, streamTable, recorderSvc, 5502);
+		DatabusSender sender = new DatabusSender(username, key, deviceTable, streamTable, recorderSvc, "databus.nrel.gov", 5502, true);
 		DataPointWriter writer = new DataPointWriter(sender);
 		
 		logger.info("Kicking off scanner object to run every "+config.getScanInterval()+" hours with broadcasts every "+config.getBroadcastInterval()+" seconds");

@@ -72,17 +72,23 @@ public class DatabusSender {
 
 	private int port;
 	
-	public DatabusSender(String username, String key, String deviceTable, String streamTable, ExecutorService recorderSvc, int port) {
+	public DatabusSender(String username, String key, String deviceTable, String streamTable, ExecutorService recorderSvc, String host, int port, boolean isSecure) {
 		log.info("username="+username+" key="+key+" deviceTable="+deviceTable+" str="+streamTable+" port="+port);
-		this.hostUrl = "https://databus.nrel.gov:"+port;
 		this.port = port;
 		this.deviceTable = deviceTable;
 		this.streamTable = streamTable;
 		PoolingClientConnectionManager mgr = new PoolingClientConnectionManager();
 		mgr.setDefaultMaxPerRoute(30);
 		mgr.setMaxTotal(30);
-		httpclient = createSecureOne(mgr);
-
+		if (isSecure) {
+			this.hostUrl = "https://"+host+":"+port;
+			httpclient = createSecureOne(mgr);
+		} else {
+			this.hostUrl = "http://"+host+":"+port;
+			httpclient = new DefaultHttpClient(mgr);
+		}
+		
+		log.info("hostUrl="+hostUrl);
 		meta.initialize(username, key, hostUrl, httpclient, deviceTable, streamTable, recorderSvc);
 	}
 
