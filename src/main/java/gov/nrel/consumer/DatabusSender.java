@@ -73,6 +73,7 @@ public class DatabusSender {
 	private int port;
 	
 	public DatabusSender(String username, String key, String deviceTable, String streamTable, ExecutorService recorderSvc, int port) {
+		log.info("username="+username+" key="+key+" deviceTable="+deviceTable+" str="+streamTable+" port="+port);
 		this.hostUrl = "https://databus.nrel.gov:"+port;
 		this.port = port;
 		this.deviceTable = deviceTable;
