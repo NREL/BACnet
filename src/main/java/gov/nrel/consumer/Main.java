@@ -143,11 +143,12 @@ public class Main {
 		
 		String streamTable = "bacnetstreamMeta";
 		String deviceTable = "bacnetdeviceMeta";
-		String groupPostKey = "post:12648255374:b1:7800475230981326433";
-		String groupGetKey = "get:12646042734:b1:5607271170139410779";
 
-		logger.info("getkey="+groupGetKey);
-		DatabusSender sender = new DatabusSender(groupPostKey, groupGetKey, deviceTable, streamTable, recorderSvc);
+		String username = "robot-bacnet";
+		String key = "941RCGC.B2.1WWXM5WZVA5YL";
+		
+		logger.info("user="+username+" key="+key);
+		DatabusSender sender = new DatabusSender(username, key, deviceTable, streamTable, recorderSvc);
 		DataPointWriter writer = new DataPointWriter(sender);
 		
 		logger.info("Kicking off scanner object to run every "+config.getScanInterval()+" hours with broadcasts every "+config.getBroadcastInterval()+" seconds");

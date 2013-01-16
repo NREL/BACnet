@@ -36,11 +36,13 @@ public class MetaLoader {
 	private Set<Device> registeredDevices = new HashSet<Device>();
 	private Set<Stream> registeredStreams = new HashSet<Stream>();
 	private ObjectMapper mapper = new ObjectMapper();
-	private String getKey;
 	private ExecutorService recorderSvc;
+	private String username;
+	private String key;
 	
-	public void initialize(DefaultHttpClient httpclient, String deviceTable, String streamTable, String getKey, ExecutorService recorderSvc) {
-		this.getKey = getKey;
+	public void initialize(String username, String key, DefaultHttpClient httpclient, String deviceTable, String streamTable, ExecutorService recorderSvc) {
+		this.username = username;
+		this.key = key;
 		this.recorderSvc = recorderSvc;
 		
 		//need to read in all stuff here
@@ -131,7 +133,7 @@ public class MetaLoader {
 		String theString = "";
 		try {
 			BasicHttpContext ctx = setupPreEmptiveBasicAuth(httpclient);
-			HttpGet get = new HttpGet(DatabusSender.HOST_URL+"/getdata/"+sql);
+			HttpGet get = new HttpGet(DatabusSender.HOST_URL+"/api/getdataV1/"+sql);
 			long t1 = System.currentTimeMillis();
 			HttpResponse resp = httpclient.execute(get, ctx);
 			
@@ -156,11 +158,11 @@ public class MetaLoader {
 		}
 	}
 	
-	private BasicHttpContext setupPreEmptiveBasicAuth(DefaultHttpClient httpclient) {
+	BasicHttpContext setupPreEmptiveBasicAuth(DefaultHttpClient httpclient) {
 		HttpHost targetHost = new HttpHost("databus.nrel.gov", 5502, "https"); 
 		httpclient.getCredentialsProvider().setCredentials(
 		        new AuthScope(targetHost.getHostName(), targetHost.getPort()), 
-		        new UsernamePasswordCredentials("program", getKey));
+		        new UsernamePasswordCredentials(username, key));
 
 		// Create AuthCache instance
 		AuthCache authCache = new BasicAuthCache();

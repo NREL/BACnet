@@ -37,6 +37,7 @@ import org.apache.http.conn.ssl.X509HostnameVerifier;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
+import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.map.JsonMappingException;
@@ -57,7 +58,6 @@ public class DatabusSender {
 
 	public static final int PORT = 5502;
 	public static final String HOST_URL = "https://databus.nrel.gov:"+PORT;
-	public static String REGISTER_KEY = "register:10768272987:b1:4814227944682770547";
 
 	private DefaultHttpClient httpclient;
 	private String groupPostKey;
@@ -72,8 +72,7 @@ public class DatabusSender {
 
 	private Long initialStart;
 	
-	public DatabusSender(String groupPostKey, String groupGetKey, String deviceTable, String streamTable, ExecutorService recorderSvc) {
-		this.groupPostKey = groupPostKey;
+	public DatabusSender(String username, String key, String deviceTable, String streamTable, ExecutorService recorderSvc) {
 		this.deviceTable = deviceTable;
 		this.streamTable = streamTable;
 		PoolingClientConnectionManager mgr = new PoolingClientConnectionManager();
@@ -85,7 +84,7 @@ public class DatabusSender {
 			httpclient = new DefaultHttpClient(mgr);
 		}
 
-		meta.initialize(httpclient, deviceTable, streamTable, groupGetKey, recorderSvc);
+		meta.initialize(username, key, httpclient, deviceTable, streamTable, recorderSvc);
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -108,8 +107,8 @@ public class DatabusSender {
 		}
 
 		String json = writeValueAsString(jsonObj);
-		
-		post("/postdata", json);
+		log.info("posting datasetzie="+data.size());
+		post("/api/postdataV1", json);
 		
 		logInfo(data.size(), startPost);
 	}
@@ -163,13 +162,13 @@ public class DatabusSender {
 		result.put("stream", str.getTableName());
 		String json = writeValueAsString(result);
 		
-		long post2 = post("/postdata", json);
+		long post2 = post("/api/postdataV1", json);
 		log.info(id+"registered time="+reg+" and posted time="+post2+" stream="+str.getTableName());
 	}
 	
 	private long registerNewStream(String tableName, String group) {
 		String json = createJsonForRequest(tableName, group);
-		return post("/register/" + REGISTER_KEY, json);
+		return post("/api/registerV1", json);
 	}
 
 	private synchronized void postNewDevice(String id, Device d) {
@@ -191,7 +190,7 @@ public class DatabusSender {
 		result.put("address", d.getAddress());
 		String json = writeValueAsString(result);
 
-		long total = post("/postdata", json);
+		long total = post("/api/postdataV1", json);
 		log.info(id+"device="+d.getDeviceId()+" posted time="+total);
 	}
 
@@ -216,7 +215,8 @@ public class DatabusSender {
 			httpPost.setHeader("Content-Type", "application/json");
 			httpPost.setEntity(new StringEntity(json));
 			long t1 = System.currentTimeMillis();
-			HttpResponse response2 = httpclient.execute(httpPost);
+			BasicHttpContext ctx = meta.setupPreEmptiveBasicAuth(httpclient);
+			HttpResponse response2 = httpclient.execute(httpPost, ctx);
 			long t2 = System.currentTimeMillis();
 			
 			statusLine = ""+response2.getStatusLine();
