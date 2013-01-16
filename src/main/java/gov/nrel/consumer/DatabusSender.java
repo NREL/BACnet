@@ -57,10 +57,9 @@ public class DatabusSender {
 			.getName());
 
 	public static final int PORT = 5502;
-	public static final String HOST_URL = "https://databus.nrel.gov:"+PORT;
+	//public static final String HOST_URL = "https://databus.nrel.gov:"+PORT;
 
 	private DefaultHttpClient httpclient;
-	private String groupPostKey;
 	private ObjectMapper mapper = new ObjectMapper();
 	private String deviceTable;
 	private String streamTable;
@@ -71,18 +70,17 @@ public class DatabusSender {
 	private double minAve = Integer.MAX_VALUE;
 
 	private Long initialStart;
+
+	private String hostUrl;
 	
-	public DatabusSender(String username, String key, String deviceTable, String streamTable, ExecutorService recorderSvc) {
+	public DatabusSender(String username, String key, String deviceTable, String streamTable, ExecutorService recorderSvc, int port) {
+		this.hostUrl = "https://databus.nrel.gov:"+port;
 		this.deviceTable = deviceTable;
 		this.streamTable = streamTable;
 		PoolingClientConnectionManager mgr = new PoolingClientConnectionManager();
 		mgr.setDefaultMaxPerRoute(30);
 		mgr.setMaxTotal(30);
-		if (HOST_URL.startsWith("https")) {
-			httpclient = createSecureOne(mgr);
-		} else {
-			httpclient = new DefaultHttpClient(mgr);
-		}
+		httpclient = createSecureOne(mgr);
 
 		meta.initialize(username, key, httpclient, deviceTable, streamTable, recorderSvc);
 	}
@@ -133,7 +131,6 @@ public class DatabusSender {
 
 	private Map<String, String> create(DatabusBean b) {
 		Map<String, String> result = new HashMap<String, String>();
-		result.put("_postKey", groupPostKey);
 		result.put("_tableName", b.getTableName());
 		result.put("time", b.getTime() + "");
 		result.put("value", b.getValue() + "");
@@ -150,7 +147,6 @@ public class DatabusSender {
 		long reg = registerNewStream(str.getTableName(), group);
 		
 		Map<String, String> result = new HashMap<String, String>();
-		result.put("_postKey", groupPostKey);
 		result.put("_tableName", streamTable);
 		result.put("units", str.getUnits());
 		result.put("virtual", str.getVirtual());
@@ -178,7 +174,6 @@ public class DatabusSender {
 		log.info(id+"posting new device="+d.getDeviceId());
 		
 		Map<String, String> result = new HashMap<String, String>();
-		result.put("_postKey", groupPostKey);
 		result.put("_tableName", deviceTable);
 		result.put("owner", d.getOwner());
 		result.put("site", d.getSite());
@@ -207,7 +202,7 @@ public class DatabusSender {
 	}
 	
 	private long post(String url, String json) {
-		HttpPost httpPost = new HttpPost(HOST_URL+url);
+		HttpPost httpPost = new HttpPost(hostUrl+url);
 
 		String statusLine = null;
 
