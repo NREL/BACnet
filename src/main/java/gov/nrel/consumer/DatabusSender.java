@@ -82,7 +82,7 @@ public class DatabusSender {
 		mgr.setMaxTotal(30);
 		httpclient = createSecureOne(mgr);
 
-		meta.initialize(username, key, httpclient, deviceTable, streamTable, recorderSvc);
+		meta.initialize(username, key, hostUrl, httpclient, deviceTable, streamTable, recorderSvc);
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })

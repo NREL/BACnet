@@ -39,11 +39,13 @@ public class MetaLoader {
 	private ExecutorService recorderSvc;
 	private String username;
 	private String key;
+	private String hostUrl;
 	
-	public void initialize(String username, String key, DefaultHttpClient httpclient, String deviceTable, String streamTable, ExecutorService recorderSvc) {
+	public void initialize(String username, String key, String hostUrl, DefaultHttpClient httpclient, String deviceTable, String streamTable, ExecutorService recorderSvc) {
 		this.username = username;
 		this.key = key;
 		this.recorderSvc = recorderSvc;
+		this.hostUrl = hostUrl;
 		
 		//need to read in all stuff here
 		loadDevices(httpclient, deviceTable, streamTable);
@@ -133,7 +135,7 @@ public class MetaLoader {
 		String theString = "";
 		try {
 			BasicHttpContext ctx = setupPreEmptiveBasicAuth(httpclient);
-			HttpGet get = new HttpGet(DatabusSender.HOST_URL+"/api/getdataV1/"+sql);
+			HttpGet get = new HttpGet(hostUrl+"/api/getdataV1/"+sql);
 			long t1 = System.currentTimeMillis();
 			HttpResponse resp = httpclient.execute(get, ctx);
 			
