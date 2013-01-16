@@ -53,7 +53,7 @@ public class MetaLoader {
 		this.mode = "https";
 		if(!isSecure)
 			mode = "http";
-		this.hostUrl = mode+"//"+host+":"+port;
+		this.hostUrl = mode+"://"+host+":"+port;
 		
 		//need to read in all stuff here
 		loadDevices(httpclient, deviceTable, streamTable);
