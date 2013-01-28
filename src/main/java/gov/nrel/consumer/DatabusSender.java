@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.net.ssl.SSLContext;
@@ -112,8 +113,10 @@ public class DatabusSender {
 		}
 
 		String json = writeValueAsString(jsonObj);
-		log.info("posting datasetzie="+data.size());
+		log.info("posting datasetsize="+data.size());
 		post("/api/postdataV1", json);
+		if(log.isLoggable(Level.FINE))
+			log.fine("posted dataset="+json);
 		
 		logInfo(data.size(), startPost);
 	}
