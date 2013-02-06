@@ -38,6 +38,8 @@ import org.apache.http.conn.ssl.X509HostnameVerifier;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.jackson.JsonGenerationException;
@@ -88,7 +90,9 @@ public class DatabusSender {
 			this.hostUrl = "http://"+host+":"+port;
 			httpclient = new DefaultHttpClient(mgr);
 		}
-		
+		HttpParams params = httpclient.getParams();
+		HttpConnectionParams.setConnectionTimeout(params, 20000);
+		HttpConnectionParams.setSoTimeout(params, 20000);
 		log.info("hostUrl="+hostUrl);
 		meta.initialize(username, key, host, port, isSecure, httpclient, deviceTable, streamTable, recorderSvc);
 	}
