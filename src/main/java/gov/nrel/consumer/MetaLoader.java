@@ -166,6 +166,7 @@ public class MetaLoader {
 			List<Map<String, String>> object = (List<Map<String, String>>) root.get("data");
 			return object;
 		} catch(Exception e) {
+			log.info("exception loading");
 			throw new RuntimeException("error on processing.  string body returned="+theString, e);
 		}
 	}

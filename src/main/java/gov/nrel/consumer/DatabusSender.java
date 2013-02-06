@@ -242,6 +242,7 @@ public class DatabusSender {
 			EntityUtils.consume(entity);
 			return t2-t1;
 		} catch (Exception e) {
+			log.info("failed to post, continuing on to next request");
 			throw new RuntimeException(e);
 		} finally {
 			httpPost.reset();
