@@ -91,8 +91,8 @@ public class DatabusSender {
 			httpclient = new DefaultHttpClient(mgr);
 		}
 		HttpParams params = httpclient.getParams();
-		HttpConnectionParams.setConnectionTimeout(params, 20000);
-		HttpConnectionParams.setSoTimeout(params, 20000);
+		HttpConnectionParams.setConnectionTimeout(params, 60000);
+		HttpConnectionParams.setSoTimeout(params, 60000);
 		log.info("hostUrl="+hostUrl);
 		meta.initialize(username, key, host, port, isSecure, httpclient, deviceTable, streamTable, recorderSvc);
 	}
