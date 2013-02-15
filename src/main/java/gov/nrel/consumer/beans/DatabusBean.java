@@ -24,5 +24,9 @@ public class DatabusBean {
 	public void setValue(Double value) {
 		this.value = value;
 	}
+	@Override
+	public String toString() {
+		return "table="+tableName+",t="+time+",v="+value;
+	}
 	
 }
