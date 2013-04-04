@@ -1,0 +1,12 @@
+[submodule "vagrant/chef/cookbooks/apt"]
+	path = vagrant/chef/cookbooks/apt
+	url = git@github.com:opscode-cookbooks/apt.git
+[submodule "vagrant/chef/cookbooks/java"]
+	path = vagrant/chef/cookbooks/java
+	url = git@github.com:opscode-cookbooks/java.git
+[submodule "vagrant/chef/cookbooks/git"]
+	path = vagrant/chef/cookbooks/git
+	url = git@github.com:opscode-cookbooks/git.git
+[submodule "vagrant/chef/cookbooks/gradle"]
+	path = vagrant/chef/cookbooks/gradle
+	url = git@github.com:michaelklishin/gradle-chef-cookbook.git

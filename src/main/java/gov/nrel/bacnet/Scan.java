@@ -742,10 +742,7 @@ public class Scan {
 			}
 		}
 
-		logger.info("Vendor ID is hardcoded by bacnet4j to serotonin's (236) it should be possible to change it if necessary");
 		logger.info("Binding to: " + saddress + " " + sbroadcast);
-
-		logger.severe("We cannot bind to the specific interface, bacnet4j doesn't work when we do");
 
 		LocalDevice localDevice = new LocalDevice(device_id, sbroadcast);
 		localDevice.setPort(LocalDevice.DEFAULT_PORT);
