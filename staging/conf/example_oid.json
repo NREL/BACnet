@@ -1,0 +1,12 @@
+[
+    {
+        "objectName":"some_object",
+        "objectType":"analog input",
+        "objectSource":"echo {value:\"72.5\", timestamp:\"2012-02-01 12:00:00\", units:\"degrees fahrenheit\"}"
+    },
+    {
+        "objectName":"some_object 2",
+        "objectType":"binary input",
+        "objectSource":"echo {value:\"true\", timestamp:\"2012-02-01 12:00:00\", units:\"\"}"
+    }
+]

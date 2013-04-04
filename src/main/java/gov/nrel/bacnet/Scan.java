@@ -455,7 +455,7 @@ public class Scan {
 
 	public static void mainImpl(String[] args) throws Exception {
 		Logger.getLogger("").setLevel(Level.INFO);
-		m_logger.info("testing");
+
 		CommandLineParser parser = new PosixParser();
 		Options options = new Options();
 		options.addOption("m", "min-device-id", true,
@@ -1240,17 +1240,17 @@ public class Scan {
 			w = new java.io.PrintWriter(file, true);
 		}
 
-		java.io.FileOutputStream jsonfile = null;
-		java.io.PrintWriter jsonw = null;
-		try {
-			jsonfile = new java.io.FileOutputStream(json_outputname);
-		} catch (Exception e) {
-			m_logger.log(Level.SEVERE, "Error opening output file", e);
-		}
-
-		if (jsonfile != null) {
-			jsonw = new java.io.PrintWriter(jsonfile, true);
-		}
+		//java.io.FileOutputStream jsonfile = null;
+		//java.io.PrintWriter jsonw = null;
+		//try {
+		//	jsonfile = new java.io.FileOutputStream(json_outputname);
+		//} catch (Exception e) {
+		//	m_logger.log(Level.SEVERE, "Error opening output file", e);
+		//}
+        //
+		//if (jsonfile != null) {
+		//	jsonw = new java.io.PrintWriter(jsonfile, true);
+		//}
 
 		w.println(new Timestamp(date.getTime()));
 		w.println("Device OID, Device Name, Object Type, Object Instance Number, Object Name, Object Value, Trend Log Date, Trend Log Time");
@@ -1428,18 +1428,18 @@ public class Scan {
 								}
 							}
 
-							if (DATABUS_URL == null) {
-								sendToDatabus(parent, parent,
-										new DatabusSender(), rd.getAddress()
-												.toString());
-							} else {
-								sendToDatabus(parent, parent,
-										new DatabusSender(DATABUS_URL), rd
-												.getAddress().toString());
-							}
+							//if (DATABUS_URL == null) {
+							//	sendToDatabus(parent, parent,
+							//			new DatabusSender(), rd.getAddress()
+							//					.toString());
+							//} else {
+							//	sendToDatabus(parent, parent,
+							//			new DatabusSender(DATABUS_URL), rd
+							//					.getAddress().toString());
+							//}
 							printObject(parent, parent, w);
 							com.google.gson.Gson gson = new com.google.gson.Gson();
-							jsonw.println(gson.toJson(parent));
+							//jsonw.println(gson.toJson(parent));
 
 						} catch (Exception e) {
 							m_logger.log(Level.FINE,

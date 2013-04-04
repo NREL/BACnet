@@ -46,7 +46,7 @@ public class Main {
 		
 		logger.info("Starting now that logger properties are loaded");
 
-		String network = "eth4";
+		String network = "eth4";   //why is all this hard coded in here? ugh.
 		int scanInterval = 168;
 		int broadcastInterval = 1;
 		int range = 100;
