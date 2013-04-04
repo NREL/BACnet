@@ -2,5 +2,5 @@ bin/
 .vagrant
 .idea
 .gradle/
-output/
 .DS_Store
+build/

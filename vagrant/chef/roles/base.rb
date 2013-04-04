@@ -6,5 +6,6 @@ run_list([
              "recipe[apt]",
              "recipe[git]",
              "recipe[java]",
-             "recipe[gradle::tarball]"
+             "recipe[gradle::tarball]",
+             "recipe[vim]"
          ])
