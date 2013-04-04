@@ -10,3 +10,6 @@
 [submodule "vagrant/chef/cookbooks/gradle"]
 	path = vagrant/chef/cookbooks/gradle
 	url = git@github.com:michaelklishin/gradle-chef-cookbook.git
+[submodule "vagrant/chef/cookbooks/vim"]
+	path = vagrant/chef/cookbooks/vim
+	url = git@github.com:opscode-cookbooks/vim.git
