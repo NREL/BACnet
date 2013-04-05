@@ -1,7 +1,8 @@
 bin/
+build/
 .vagrant
 .idea
 .gradle/
 .DS_Store
-build/
 .ruby-version
+.classpath
