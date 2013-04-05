@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<qualifiedTypeNameHistroy>
-<fullyQualifiedTypeName name="com.serotonin.bacnet4j.type.enumerated.Segmentation"/>
-<fullyQualifiedTypeName name="com.serotonin.bacnet4j.type.primitive.Unsigned16"/>
-<fullyQualifiedTypeName name="com.serotonin.bacnet4j.event.DefaultExceptionListener"/>
-<fullyQualifiedTypeName name="MyExceptionListener"/>
-<fullyQualifiedTypeName name="com.serotonin.bacnet4j.LocalDevice"/>
-<fullyQualifiedTypeName name="java.lang.System"/>
-</qualifiedTypeNameHistroy>

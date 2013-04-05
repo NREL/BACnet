@@ -4,3 +4,4 @@ bin/
 .gradle/
 .DS_Store
 build/
+.ruby-version
