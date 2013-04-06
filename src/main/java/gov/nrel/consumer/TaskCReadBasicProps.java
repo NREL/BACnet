@@ -99,8 +99,12 @@ public class TaskCReadBasicProps implements Runnable, Callable<Object> {
 
 		log.info(id+"posting streams="+streams.size()+" c="+counter2);
 		DatabusSender sender = writer.getSender();
-		for(Stream str : streams) {
-			sender.postNewStream(str, dev, "bacnet", id);
+
+		if (sender != null)
+		{
+			for(Stream str : streams) {
+				sender.postNewStream(str, dev, "bacnet", id);
+			}
 		}
 
 		st.setCachedOids(oids);

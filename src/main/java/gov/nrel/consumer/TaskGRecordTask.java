@@ -44,7 +44,10 @@ public class TaskGRecordTask implements Runnable {
 
 	private void runImpl() throws Exception {
 		try {
-			sender.postData(data);
+			if (sender != null)
+			{
+				sender.postData(data);
+			}
 		} catch(Exception e) {
 			log.log(Level.WARNING, "logging to file since to databus failed", e);
 			logToFile();
