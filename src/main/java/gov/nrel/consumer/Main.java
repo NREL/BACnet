@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
+import java.util.Timer;
 
 import com.serotonin.bacnet4j.LocalDevice;
 import com.serotonin.bacnet4j.event.DefaultExceptionListener;
@@ -39,6 +40,7 @@ public class Main {
 	private ScheduledThreadPoolExecutor svc;
 	private ExecutorService execSvc;
 	private ExecutorService recorderSvc;
+	private Timer slaveDeviceTimer;
 	
 	public static void main(String[] args) throws SecurityException, IOException {
 		
@@ -131,6 +133,12 @@ public class Main {
 			return;
 		}
 
+		if (config.getSlaveDeviceEnabled())
+		{
+			slaveDeviceTimer = new Timer();
+			slaveDeviceTimer.schedule(new gov.nrel.bacnet.SlaveDevice(localDevice, config), 1000, config.getSlaveDeviceUpdateInterval() * 1000);
+		}
+
 		String file = config.getFilterFileName();
 		String filterfile = readFile(file, Charset.forName("US-ASCII"));
 		com.google.gson.Gson gson = new com.google.gson.Gson();
@@ -199,7 +207,6 @@ public class Main {
 
 		int min_id = -1;
 		int max_id = -1;
-		int time_to_scan = -1;
 		int device_id = 11234;
 
 		int scanInterval = 168;
@@ -219,13 +226,16 @@ public class Main {
 
 		String devname = "eth0";
 
-		//Vector<OIDValue> oidvalues = null;
-
 
                 String filterFile = "../conf/filter.json";
+		String slaveDeviceConfigFile = "../conf/example_oid.json";
 
-		boolean scan = false;
-		boolean slave_device = false;
+		int slaveDeviceUpdateInterval = 10;
+
+
+
+		boolean scan = true;
+		boolean slaveDeviceEnabled = false;
                 String loggingPropertiesFile = "../conf/logging.properties";
 
 		boolean verboseLogging = false;
@@ -251,17 +261,18 @@ public class Main {
 //		options.addOption("e", "example-filter-file", true,
 //				"Write an example JSON filter file out and exit, with the given filename");
 		options.addOption("s", "scan", false, "Enable scanning feature, default: " + scan);
-//		options.addOption("S", "slave-device", false,
-//				"Enable slave device feature, default: " + slave_device);
-		options.addOption("T", "time-to-scan", true,
-				"Number of scans to perform, -1 scans indefinitely, default: " + time_to_scan);
+		options.addOption("S", "slave-device", false,
+				"Enable slave device feature, default: " + slaveDeviceEnabled);
+		options.addOption("T", "slave-device-interval", true,
+				"Number of seconds between updates to slave device values, default: " + slaveDeviceUpdateInterval);
 		options.addOption(
 				"t",
 				"scan-interval",
 				true,
 				"Amount of time (in ms) to wait between finishing one scan and starting another. default: " + scanInterval);
-//		options.addOption("F", "oid-file", true,
-//				"JSON oid file to use for the slave device configuration, default: " + oid_file);
+		options.addOption("F", "oid-file", true,
+				"JSON oid file to use for the slave device configuration, default: " + slaveDeviceConfigFile);
+
 //		options.addOption("E", "example-oid-file", true,
 //				"Write an example JSON oid input file out and exit, with the given filename");
 		options.addOption("v", "verbose", false,
@@ -365,10 +376,11 @@ public class Main {
 
 			scanInterval = Integer.parseInt(line.getOptionValue("t",
 					"168"));
-			time_to_scan = Integer.parseInt(line.getOptionValue("T", "-1"));
+			// time_to_scan = Integer.parseInt(line.getOptionValue("T", "-1"));
 			device_id = Integer.parseInt(line.getOptionValue("i", "1234"));
 			scan = line.hasOption("s");
-			slave_device = line.hasOption("S");
+
+			slaveDeviceEnabled = line.hasOption("S");
 
 			/*
 			min_id = Integer.parseInt(line.getOptionValue("m", "-1"));
@@ -416,19 +428,11 @@ public class Main {
 			if (line.hasOption("f")) {
 				filterFile = line.getOptionValue("f");
 			}
-/*
-			if (line.hasOption("F")) {
-				System.out.println("Loading JSON oid file: "
-						+ line.getOptionValue("F"));
-				String filterfile = readFile(line.getOptionValue("F"),
-						Charset.forName("US-ASCII"));
-				com.google.gson.Gson gson = new com.google.gson.Gson();
 
-				java.lang.reflect.Type vectortype = new com.google.gson.reflect.TypeToken<Vector<OIDValue>>() {
-				}.getType();
-				oidvalues = gson.fromJson(filterfile, vectortype);
+			if (line.hasOption("F")) {
+				slaveDeviceConfigFile = line.getOptionValue("F");
 			}
-*/
+
 			devname = line.getOptionValue("dev", "eth0");
 
 			if (line.hasOption("v")) {
@@ -474,7 +478,7 @@ public class Main {
 		Config config = new Config(scanInterval, broadcastInterval, range, numThreads, devname, verboseLogging,
 		    veryVerboseLogging, device_id, filterFile, loggingPropertiesFile, databusEnabled,
 		    databusDeviceTable, databusStreamTable, databusUserName, databusKey,
-		    databusURL, databusPort);
+		    databusURL, databusPort, slaveDeviceEnabled, slaveDeviceConfigFile, slaveDeviceUpdateInterval);
 
 		return config;
 	}
@@ -579,14 +583,14 @@ public class Main {
 
 		SlaveDevice sd = null;
 
-		if (slave_device) {
+		if (slaveDeviceEnabled) {
 			logger.info("Creating slave device object");
 			sd = new SlaveDevice(localDevice, oidvalues);
 		}
 
-		if ((slave_device == false && scan == false)
-				|| (slave_device == false && scan != false && time_to_scan == 0)) {
-			logger.severe("Nothing to do, no slave_device enabled and no scan enabled, or scan enabled and numscans set to 0");
+		if ((slaveDeviceEnabled == false && scan == false)
+				|| (slaveDeviceEnabled == false && scan != false && time_to_scan == 0)) {
+			logger.severe("Nothing to do, no slaveDeviceEnabled enabled and no scan enabled, or scan enabled and numscans set to 0");
 		}
 
 		java.util.Date lastSlaveUpdate = null;
@@ -597,7 +601,7 @@ public class Main {
                      ++i) 
                 {
 
-			if (slave_device) {
+			if (slaveDeviceEnabled) {
 				boolean doupdate = false;
 				java.util.Date now = new java.util.Date();
 				if (lastSlaveUpdate == null) {
@@ -622,9 +626,9 @@ public class Main {
 
                 logger.info("Scanning complete");
 
-                // keep running if we have a slave_device
+                // keep running if we have a slaveDeviceEnabled
 
-                while (slave_device) { 
+                while (slaveDeviceEnabled) { 
                   boolean doupdate = false; 
                   java.util.Date now = new java.util.Date(); 
                   

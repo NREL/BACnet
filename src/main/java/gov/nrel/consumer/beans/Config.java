@@ -24,11 +24,14 @@ public class Config {
 	private String databusUrl;
 	private int databusPort;
 	private String loggingPropertiesFileName;
+	private boolean slaveDeviceEnabled;
+	private String slaveDeviceConfigFile;
+	private int slaveDeviceUpdateInterval;
 
 	public Config(int scanInterval, int broadcastInterval, int range, int numThreads, String networkDevice, boolean verboseLogging,
 	    boolean veryVerboseLogging, int deviceId, String filterFileName, String loggingPropertiesFileName, boolean databusEnabled,
 	    String databusDeviceTable, String databusStreamTable, String databusUserName, String databusKey,
-	    String databusUrl, int databusPort) {
+	    String databusUrl, int databusPort, boolean slaveDeviceEnabled, String slaveDeviceConfigFile, int slaveDeviceUpdateInterval) {
 		this.scanInterval = scanInterval;
 		this.broadcastInterval = broadcastInterval;
 		this.range = range;
@@ -46,6 +49,9 @@ public class Config {
 		this.databusKey = databusKey;
 		this.databusUrl = databusUrl; 
 		this.databusPort = databusPort;
+		this.slaveDeviceEnabled = slaveDeviceEnabled;
+		this.slaveDeviceConfigFile = slaveDeviceConfigFile;
+		this.slaveDeviceUpdateInterval = slaveDeviceUpdateInterval;
 
 
 		logger.info("Config initialized scanInterval: " + this.scanInterval);
@@ -65,6 +71,9 @@ public class Config {
 		logger.info("Config initialized databusKey: " + this.databusKey);
 		logger.info("Config initialized databusUrl: " + this.databusUrl);
 		logger.info("Config initialized databusPort: " + this.databusPort);
+		logger.info("Config initialized slaveDeviceEnabled: " + this.slaveDeviceEnabled);
+		logger.info("Config initialized slaveDeviceConfigFile: " + this.slaveDeviceConfigFile);
+		logger.info("Config initialized slaveDeviceUpdateInterval: " + this.slaveDeviceUpdateInterval);
 	}
 
 	public String getLoggingPropertiesFileName() {
@@ -134,7 +143,18 @@ public class Config {
 		return databusPort;
 	}
 
+	public boolean getSlaveDeviceEnabled() {
+		return slaveDeviceEnabled;
+	}
 
+	public String getSlaveDeviceConfigFile() {
+		return slaveDeviceConfigFile;
+	}
+
+	public int getSlaveDeviceUpdateInterval() {
+		return slaveDeviceUpdateInterval;
+	}
+	
 
 //	public int deviceMatches(RemoteDevice t_rd) {
 //		return oidMatches(t_rd, null);
