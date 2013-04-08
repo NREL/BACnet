@@ -1,12 +1,19 @@
-[
+{ "data":[
     {
+        "uuid": "978bbb91-5422-4a95-a946-6db00b510097",
+        "source": "some string that we will set",
         "objectName":"some_object",
         "objectType":"analog input",
-        "objectSource":"echo {value:\"72.5\", timestamp:\"2012-02-01 12:00:00\", units:\"degrees fahrenheit\"}"
+        "objectSource":"echo {value:\"72.5\", timestamp:1365082020, units:\"degrees fahrenheit\"}"
     },
     {
+        "uuid": "336d4993-5347-46de-b397-ac203cf1b574",
+        "source": "some string that we will set",
         "objectName":"some_object 2",
         "objectType":"binary input",
-        "objectSource":"echo {value:\"true\", timestamp:\"2012-02-01 12:00:00\", units:\"\"}"
+        "objectSource":"echo {value:\"true\", timestamp:1365082020, units:\"\"}"
     }
 ]
+}
+
+

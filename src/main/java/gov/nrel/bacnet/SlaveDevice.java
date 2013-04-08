@@ -128,15 +128,22 @@ import org.apache.commons.cli.*;
 public class SlaveDevice extends java.util.TimerTask {
 	private static final Logger logger = Logger.getLogger(SlaveDevice.class.getName());
 
+	static class OIDs {
+		Vector<OIDValue> data;
+	}
+
 	static class OIDValue {
-		String objectName;
-		String objectType;
-		String objectSource;
+		String uuid; // I'm not sure how these are intended to be used
+		String source;
+
+		String objectName; // name of bacnet object
+		String objectType; // type of bacnet object
+		String objectSource; // system call to execute to get value of object
 	}
 
 	static class OIDValueResponse {
 		String value;
-		String timeStamp;
+		int timeStamp; // which bacnet property do we actually want to set with this?
 		String units;
 	}
 
@@ -172,7 +179,7 @@ public class SlaveDevice extends java.util.TimerTask {
 	}
 
 	public SlaveDevice(LocalDevice ld, Config config) {
-		Vector<OIDValue> values = null;
+		OIDs values = null;
 
 		try {
 			String filterfile = gov.nrel.consumer.Main.readFile(config.getSlaveDeviceConfigFile(),
@@ -180,7 +187,7 @@ public class SlaveDevice extends java.util.TimerTask {
 
 			com.google.gson.Gson gson = new com.google.gson.Gson();
 
-			java.lang.reflect.Type vectortype = new com.google.gson.reflect.TypeToken<Vector<OIDValue>>() { }.getType();
+			java.lang.reflect.Type vectortype = new com.google.gson.reflect.TypeToken<OIDs>() { }.getType();
 	
 			values = gson.fromJson(filterfile, vectortype);
 		} catch (java.lang.Exception e) {
@@ -200,7 +207,7 @@ public class SlaveDevice extends java.util.TimerTask {
 					Segmentation.segmentedBoth);
 
 			if (values != null) {
-				for (OIDValue value : values) {
+				for (OIDValue value : values.data) {
 					try {
 						ObjectType ot = stringToType(value.objectType);
 	
@@ -277,8 +284,8 @@ public class SlaveDevice extends java.util.TimerTask {
 
 				com.google.gson.Gson gson = new com.google.gson.Gson();
 
-				java.lang.reflect.Type valuetype = new com.google.gson.reflect.TypeToken<OIDValueResponse>() {
-				}.getType();
+				java.lang.reflect.Type valuetype = new com.google.gson.reflect.TypeToken<OIDValueResponse>() { }.getType();
+
 				OIDValueResponse response = gson
 						.fromJson(output, valuetype);
 
@@ -292,43 +299,35 @@ public class SlaveDevice extends java.util.TimerTask {
 				// try until we find something that sticks
 				try {
 					int v = Integer.parseInt(response.value);
-					os.object
-							.setProperty(
-									PropertyIdentifier.presentValue,
-									new com.serotonin.bacnet4j.type.primitive.UnsignedInteger(
-											v));
+					os.object.setProperty(
+						PropertyIdentifier.presentValue,
+						new com.serotonin.bacnet4j.type.primitive.UnsignedInteger(v));
 					somethingstuck = true;
 				} catch (Exception e) {
 				}
 
 				try {
 					int v = Integer.parseInt(response.value);
-					os.object
-							.setProperty(
-									PropertyIdentifier.presentValue,
-									new com.serotonin.bacnet4j.type.primitive.SignedInteger(
-											v));
+					os.object.setProperty(
+						PropertyIdentifier.presentValue,
+						new com.serotonin.bacnet4j.type.primitive.SignedInteger(v));
 					somethingstuck = true;
 				} catch (Exception e) {
 				}
 
 				try {
-					boolean v = java.lang.Boolean
-							.getBoolean(response.value);
-					os.object
-							.setProperty(
-									PropertyIdentifier.presentValue,
-									new com.serotonin.bacnet4j.type.primitive.Boolean(
-											v));
+					boolean v = java.lang.Boolean.getBoolean(response.value);
+					os.object.setProperty(
+						PropertyIdentifier.presentValue,
+						new com.serotonin.bacnet4j.type.primitive.Boolean(v));
 					somethingstuck = true;
 				} catch (Exception e) {
 				}
 
 				try {
-					boolean v = java.lang.Boolean
-							.getBoolean(response.value);
+					boolean v = java.lang.Boolean.getBoolean(response.value);
 					os.object.setProperty(PropertyIdentifier.presentValue,
-							v ? BinaryPV.active : BinaryPV.inactive);
+						v ? BinaryPV.active : BinaryPV.inactive);
 					somethingstuck = true;
 				} catch (Exception e) {
 				}
@@ -336,39 +335,32 @@ public class SlaveDevice extends java.util.TimerTask {
 				try {
 					float v = Float.parseFloat(response.value);
 					os.object.setProperty(PropertyIdentifier.presentValue,
-							new com.serotonin.bacnet4j.type.primitive.Real(
-									v));
+						new com.serotonin.bacnet4j.type.primitive.Real(v));
 					somethingstuck = true;
 				} catch (Exception e) {
 				}
 
 				try {
 					double v = Double.parseDouble(response.value);
-					os.object
-							.setProperty(
-									PropertyIdentifier.presentValue,
-									new com.serotonin.bacnet4j.type.primitive.Double(
-											v));
+					os.object.setProperty(
+						PropertyIdentifier.presentValue,
+						new com.serotonin.bacnet4j.type.primitive.Double(v));
 					somethingstuck = true;
 				} catch (Exception e) {
 				}
 
 				try {
-					os.object
-							.setProperty(
-									PropertyIdentifier.presentValue,
-									new com.serotonin.bacnet4j.type.primitive.CharacterString(
-											response.value));
+					os.object.setProperty(
+						PropertyIdentifier.presentValue,
+						new com.serotonin.bacnet4j.type.primitive.CharacterString(response.value));
 					somethingstuck = true;
 				} catch (Exception e) {
 				}
 
 				if (!somethingstuck) {
-					os.object
-							.setProperty(
-									PropertyIdentifier.outOfService,
-									new com.serotonin.bacnet4j.type.primitive.Boolean(
-											true));
+					os.object.setProperty(
+						PropertyIdentifier.outOfService,
+						new com.serotonin.bacnet4j.type.primitive.Boolean(true));
 					throw new Exception("Unknown / unexpected type of data");
 				}
 				os.object.setProperty(PropertyIdentifier.outOfService,

@@ -971,12 +971,14 @@
 "objectId": ".*",
 "interval": "-1" 
 },
+/*
 {
  "deviceId": null,
 "objectType": ".*",
 "objectId": ".*",
 "interval": "-1" 
 },
+*/
 {
  "deviceId": "10006",
 "objectType": ".*",
@@ -1043,6 +1045,7 @@
 "objectId": ".*",
 "interval": "-1" 
 },
+/*
 {
  "deviceId": null,
 "objectType": ".*",
@@ -1055,6 +1058,7 @@
 "objectId": ".*",
 "interval": "-1" 
 },
+*/
 {
  "deviceId": ".*",
 "objectType": "Analog Input",
