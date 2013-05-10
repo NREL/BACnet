@@ -182,6 +182,7 @@ public class SlaveDevice extends java.util.TimerTask {
 		OIDs values = null;
 
 		try {
+			logger.log(Level.INFO, "Reading oid file " + config.getSlaveDeviceConfigFile());
 			String filterfile = gov.nrel.consumer.Main.readFile(config.getSlaveDeviceConfigFile(),
 					Charset.forName("US-ASCII"));
 

@@ -140,6 +140,7 @@ public class Main {
 		String filterfile = readFile(file, Charset.forName("US-ASCII"));
 		com.google.gson.Gson gson = new com.google.gson.Gson();
 
+		logger.info("using filter file:" + file);
 		JsonAllFilters filters = gson.fromJson(filterfile, JsonAllFilters.class);
 
 		int counter = 0;
