@@ -127,7 +127,8 @@ import org.apache.commons.cli.*;
 
 public class SlaveDevice extends java.util.TimerTask {
 	private static final Logger logger = Logger.getLogger(SlaveDevice.class.getName());
-
+	
+	
 	static class OIDs {
 		Vector<OIDValue> data;
 	}
@@ -153,6 +154,8 @@ public class SlaveDevice extends java.util.TimerTask {
 	}
 
 	private Vector<ObjectSource> m_objects;
+	private static Config m_config;
+	private static LocalDevice m_ld;
 
 	EngineeringUnits stringToUnits(String value) throws java.text.ParseException 
 	{
@@ -179,18 +182,25 @@ public class SlaveDevice extends java.util.TimerTask {
 	}
 
 	public SlaveDevice(LocalDevice ld, Config config) {
+		m_config = config;
+		m_ld = ld;
+		updateObjects();
+		
+	}
+	
+	public void updateObjects() {
 		OIDs values = null;
-
+		
 		try {
-			logger.log(Level.INFO, "Reading oid file " + config.getSlaveDeviceConfigFile());
-			String filterfile = gov.nrel.consumer.Main.readFile(config.getSlaveDeviceConfigFile(),
+			logger.log(Level.INFO, "Reading oid file " + m_config.getSlaveDeviceConfigFile());
+			String oidData = gov.nrel.consumer.Main.readFile(m_config.getSlaveDeviceConfigFile(),
 					Charset.forName("US-ASCII"));
 
 			com.google.gson.Gson gson = new com.google.gson.Gson();
 
 			java.lang.reflect.Type vectortype = new com.google.gson.reflect.TypeToken<OIDs>() { }.getType();
 	
-			values = gson.fromJson(filterfile, vectortype);
+			values = gson.fromJson(oidData, vectortype);
 		} catch (java.lang.Exception e) {
 			logger.log(Level.SEVERE, "Error loading slave device configuration, but allowing to continue: ", e);
 		}
@@ -198,12 +208,12 @@ public class SlaveDevice extends java.util.TimerTask {
 		m_objects = new Vector<ObjectSource>();
 
 		try {
-			ld.getConfiguration().setProperty(
+			m_ld.getConfiguration().setProperty(
 					PropertyIdentifier.objectName,
 					new CharacterString("BuildingAgent Slave Device"));
-			// ld.getConfiguration().setProperty(PropertyIdentifier.vendorIdentifier,
+			// .getConfiguration().setProperty(PropertyIdentifier.vendorIdentifier,
 			// new Unsigned16(513));
-			ld.getConfiguration().setProperty(
+			m_ld.getConfiguration().setProperty(
 					PropertyIdentifier.segmentationSupported,
 					Segmentation.segmentedBoth);
 
@@ -212,11 +222,11 @@ public class SlaveDevice extends java.util.TimerTask {
 					try {
 						ObjectType ot = stringToType(value.objectType);
 	
-						BACnetObject o = new BACnetObject(ld,
-								ld.getNextInstanceObjectIdentifier(ot));
+						BACnetObject o = new BACnetObject(m_ld,
+								m_ld.getNextInstanceObjectIdentifier(ot));
 						o.setProperty(PropertyIdentifier.objectName,
 								new CharacterString(value.objectName));
-						ld.addObject(o);
+						m_ld.addObject(o);
 						ObjectSource os = new ObjectSource();
 						os.object = o;
 						os.source = value.objectSource;
@@ -230,7 +240,7 @@ public class SlaveDevice extends java.util.TimerTask {
 				}
 			}
 		} catch (java.lang.Exception e) {
-		}
+		}	
 	}
 
 	String executeCommand(String cmd) {
@@ -274,12 +284,14 @@ public class SlaveDevice extends java.util.TimerTask {
 	}
 
 	public void run() {
+		updateObjects();
 		updateValues();
 	}
 
 	public void updateValues() {
 		for (ObjectSource os : m_objects) {
 			try {
+								
 				String output = executeCommand(os.source);
 				logger.info("Parsing result value: " + output);
 
@@ -287,8 +299,7 @@ public class SlaveDevice extends java.util.TimerTask {
 
 				java.lang.reflect.Type valuetype = new com.google.gson.reflect.TypeToken<OIDValueResponse>() { }.getType();
 
-				OIDValueResponse response = gson
-						.fromJson(output, valuetype);
+				OIDValueResponse response = gson.fromJson(output, valuetype);
 
 				if (response.units != null && !response.units.equals("")) {
 					os.object.setProperty(PropertyIdentifier.units,
