@@ -37,7 +37,7 @@ public class TaskADiscoverAll implements Runnable, Callable<Object> {
 
 	@Override
 	public Object call() throws Exception {
-		log.info("KICKING off a series of broadcast runs now!!!! so we can find new devices");
+		log.info("Staring discovery to find new devices");
 		int broadcastInterval = config.getBroadcastInterval();
 		ScheduledExecutorService svc = exec.getScheduledSvc();
 		TaskBDiscoverer scan = new TaskBDiscoverer(localDevice, exec, config, deviceConfig, dataPtWriter);

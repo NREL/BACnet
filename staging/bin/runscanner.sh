@@ -1,4 +1,4 @@
 #!/bin/sh
 echo "Calling scanner with params: $@"
 
-java -cp "../lib/*" gov.nrel.bacnet.Scan $@
+nohup java -cp "../lib/*" gov.nrel.consumer.Main $@ 

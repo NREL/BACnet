@@ -1,5 +1,6 @@
 bin/
 build/
+.project
 .vagrant
 .idea
 .gradle/

@@ -1,5 +1,5 @@
 [{
-	"instanceNumber": ".*",
+	"instanceNumber": "1",
 	"networkNumber": ".*",
 	"macAddress": ".*",
 	"networkAddress": ".*",
