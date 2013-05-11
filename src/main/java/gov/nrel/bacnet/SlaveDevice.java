@@ -210,7 +210,7 @@ public class SlaveDevice extends java.util.TimerTask {
 		try {
 			m_ld.getConfiguration().setProperty(
 					PropertyIdentifier.objectName,
-					new CharacterString("BuildingAgent Slave Device"));
+					new CharacterString("Building Agent Slave Device"));
 			// .getConfiguration().setProperty(PropertyIdentifier.vendorIdentifier,
 			// new Unsigned16(513));
 			m_ld.getConfiguration().setProperty(
@@ -284,7 +284,6 @@ public class SlaveDevice extends java.util.TimerTask {
 	}
 
 	public void run() {
-		updateObjects();
 		updateValues();
 	}
 
