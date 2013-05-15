@@ -151,6 +151,14 @@ public class SlaveDevice extends java.util.TimerTask {
 	class ObjectSource {
 		public BACnetObject object;
 		public String source;
+		public String name;
+		public String type;
+
+		public String toString()
+		{
+		  	return "(" + object.toString() + ": " + source.toString() + ")";
+		}
+
 	}
 
 	private Vector<ObjectSource> m_objects;
@@ -185,11 +193,15 @@ public class SlaveDevice extends java.util.TimerTask {
 		m_config = config;
 		m_ld = ld;
 		updateObjects();
-		
 	}
 	
 	public void updateObjects() {
 		OIDs values = null;
+
+		if (m_objects == null)
+		{
+			m_objects = new Vector<ObjectSource>();
+		}
 		
 		try {
 			logger.log(Level.INFO, "Reading oid file " + m_config.getSlaveDeviceConfigFile());
@@ -205,7 +217,7 @@ public class SlaveDevice extends java.util.TimerTask {
 			logger.log(Level.SEVERE, "Error loading slave device configuration, but allowing to continue: ", e);
 		}
 
-		m_objects = new Vector<ObjectSource>();
+		Vector<ObjectSource> newobjects = new Vector<ObjectSource>();
 
 		try {
 			m_ld.getConfiguration().setProperty(
@@ -220,26 +232,85 @@ public class SlaveDevice extends java.util.TimerTask {
 			if (values != null) {
 				for (OIDValue value : values.data) {
 					try {
-						ObjectType ot = stringToType(value.objectType);
+						boolean needstobeadded = true;
+
+						for (ObjectSource existingObject : m_objects) {
+							if (existingObject.name.equals(value.objectName)) {
+								// this is an object we already have
+								if (existingObject.type.equals(value.objectType)) {
+									needstobeadded = false;
+									// and the types match
+									if (existingObject.source.equals(value.objectSource)) {
+										// and the source matches too, nothing to do
+										newobjects.add(existingObject);
+									} else {
+										logger.log(Level.INFO, "Upating object: " + existingObject.name 
+										    + " source from: " + existingObject.source + " to " + value.objectSource);
+										existingObject.source = value.objectSource;
+										newobjects.add(existingObject);
+									}
+								} else {
+									logger.log(Level.INFO, "Object exists, but with a different type, recreating: " 
+									    + existingObject.name);
+								}
+
+								break;
+							}
+						}
+
+						if (needstobeadded)
+						{
+							ObjectType ot = stringToType(value.objectType);
 	
-						BACnetObject o = new BACnetObject(m_ld,
-								m_ld.getNextInstanceObjectIdentifier(ot));
-						o.setProperty(PropertyIdentifier.objectName,
-								new CharacterString(value.objectName));
-						m_ld.addObject(o);
-						ObjectSource os = new ObjectSource();
-						os.object = o;
-						os.source = value.objectSource;
-						m_objects.add(os);
-						logger.info("Created new bacnet object: "
-								+ value.objectName);
+							BACnetObject o = new BACnetObject(m_ld,
+									m_ld.getNextInstanceObjectIdentifier(ot));
+							o.setProperty(PropertyIdentifier.objectName,
+									new CharacterString(value.objectName));
+							ObjectSource os = new ObjectSource();
+							os.name = value.objectName;
+							os.type = value.objectType;
+							os.object = o;
+							os.source = value.objectSource;
+							newobjects.add(os);
+							logger.info("Created new bacnet object: "
+									+ value.objectName);
+							m_ld.addObject(o);
+						}
 					} catch (java.text.ParseException e) {
 						logger.log(Level.SEVERE,
 							"Error with creating new bacnet object", e);
 					}
 				}
 			}
+
+
+			for (ObjectSource os : m_objects) {
+				boolean found = false;
+
+				for (ObjectSource newos : newobjects) {
+					if (os.name.equals(newos.name)
+					    && os.type.equals(newos.type)
+					    && os.source.equals(newos.source))
+					{
+						found = true;
+						break;
+					}
+				}
+
+				if (!found)
+				{
+					logger.log(Level.INFO, "Removing no longer used object: " + os.name + " " + os.type);
+					m_ld.removeObject(os.object.getId());
+				}
+			}
+
+
+			m_objects.clear();
+			m_objects.addAll(newobjects);
+
 		} catch (java.lang.Exception e) {
+			logger.log(Level.SEVERE,
+				"Error creating new bacnet object", e);
 		}	
 	}
 
@@ -248,42 +319,86 @@ public class SlaveDevice extends java.util.TimerTask {
 
 		String returnval = "";
 
-		try {
-			logger.fine("Executing command: " + cmd);
-			Process p = r.exec(cmd);
-			InputStream in = p.getInputStream();
-			BufferedInputStream buf = new BufferedInputStream(in);
-			InputStreamReader inread = new InputStreamReader(buf);
-			BufferedReader bufferedreader = new BufferedReader(inread);
+		logger.fine("Executing command: " + cmd);
+		Process p = null;
+		InputStream in = null;
+		BufferedInputStream buf = null;
+		InputStreamReader inread = null;
+		BufferedReader bufferedreader = null;
 
-			// Read the ls output
+		try {
+			p = r.exec(cmd);
+			in = p.getInputStream();
+			buf = new BufferedInputStream(in);
+			inread = new InputStreamReader(buf);
+			bufferedreader = new BufferedReader(inread);
+
+			// Read the output
 			String line;
 			while ((line = bufferedreader.readLine()) != null) {
 				returnval += line + "\n";
 			}
-
-			try {
-				if (p.waitFor() != 0) {
-					logger.severe("Error executing process: "
-							+ p.exitValue());
-				}
-			} catch (InterruptedException e) {
-				logger.log(Level.SEVERE, "Error executing process: ", e);
-			} finally {
-				// Close the InputStream
-				bufferedreader.close();
-				inread.close();
-				buf.close();
-				in.close();
+			if (p.waitFor() != 0) {
+				logger.severe("Error executing process: "
+						+ p.exitValue());
 			}
-		} catch (IOException e) {
+		} catch (InterruptedException e) {
 			logger.log(Level.SEVERE, "Error executing process: ", e);
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, "Error creating process: ", e);
+		} finally {
+			// Close the InputStream
+			if (bufferedreader != null)
+			{
+				try {
+					bufferedreader.close();
+				} catch (Exception e) {
+					logger.log(Level.SEVERE, "Error closing bufferedreader: ", e);
+				}
+				bufferedreader = null;
+			}
+			if (inread != null)
+			{
+				try {
+					inread.close();
+				} catch (Exception e) {
+					logger.log(Level.SEVERE, "Error closing inread: ", e);
+				}
+				inread = null;
+			}
+
+			if (buf != null)
+			{
+				try {
+					buf.close();
+				} catch (Exception e) {
+					logger.log(Level.SEVERE, "Error closing buf: ", e);
+				}
+				buf = null;
+			}
+
+			if (in != null)
+			{
+				try {
+					in.close();
+				} catch (Exception e) {
+					logger.log(Level.SEVERE, "Error closing in: ", e);
+				}
+				in = null;
+			}
+
+			if (p != null)
+			{
+				p.destroy();
+				p = null;
+			}
 		}
 
 		return returnval;
 	}
 
 	public void run() {
+		updateObjects();
 		updateValues();
 	}
 
