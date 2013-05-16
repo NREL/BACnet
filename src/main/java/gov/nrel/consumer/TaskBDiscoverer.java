@@ -75,7 +75,8 @@ public class TaskBDiscoverer implements Runnable, Callable<Object> {
 	
 	private void scanImpl() throws BACnetException {
 		//At 25000, increase the range to 1000000 as there are no devices in that range...
-		if(counter > 25000)
+		// NL: updated to at least 65000 to allow for more devices to be detected
+		if(counter > 65000)
 			range = 1000000;
 
 		if(counter > 4000000) {
