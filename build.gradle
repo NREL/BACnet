@@ -1,4 +1,5 @@
 apply plugin: 'java'
+apply plugin: 'eclipse'
 
 //override the default directory of build as I like to use build and build.bat for building
 buildDir = file('build')
