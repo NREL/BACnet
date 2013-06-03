@@ -18,12 +18,13 @@ public class DeviceCreator {
 		try {
 			networkinterface = java.net.NetworkInterface.getByName(networkCardName);
 		} catch (Exception ex) {
+			ex.printStackTrace();
 			System.out.println("Unable to open device: " + networkCardName);
 			System.exit(-1);
 		}
 
 		if (networkinterface == null) {
-			System.out.println("Unable to open device: " + networkCardName);
+			System.out.println("Unable to open device(device is null): " + networkCardName);
 			System.exit(-1);
 		}
 

@@ -37,8 +37,8 @@ public class Client {
 	}
 
 	private void start() {
-		String devname = "eth0";
-		int ourDeviceId = 11234;
+		String devname = "eth5";
+		int ourDeviceId = 11235;
 		LocalDevice ourDevice = DeviceCreator.createDevice(devname, ourDeviceId);
 		
 		NewDeviceListener newDeviceListener = new NewDeviceListener();
