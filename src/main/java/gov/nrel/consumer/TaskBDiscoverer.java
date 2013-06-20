@@ -25,7 +25,7 @@ import com.serotonin.bacnet4j.service.unconfirmed.WhoIsRequest;
 import com.serotonin.bacnet4j.type.constructed.Address;
 import com.serotonin.bacnet4j.type.primitive.UnsignedInteger;
 
-public class TaskBDiscoverer implements Runnable, Callable<Object> {
+class TaskBDiscoverer implements Runnable, Callable<Object> {
 
 	private static final Logger log = Logger.getLogger(TaskBDiscoverer.class.getName());
 	

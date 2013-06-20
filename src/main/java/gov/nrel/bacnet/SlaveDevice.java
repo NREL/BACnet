@@ -22,118 +22,44 @@
  */
 package gov.nrel.bacnet;
 
-import gov.nrel.consumer.beans.Numbers;
 import gov.nrel.consumer.beans.Config;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
-import java.io.Reader;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
 
-import java.net.NetworkInterface;
-import java.net.InterfaceAddress;
-
 import java.nio.charset.Charset;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.*;
-import java.util.regex.*;
-
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.TimeZone;
 import java.util.Vector;
-import java.util.Scanner;
 
 import java.lang.Integer;
 
-import com.serotonin.util.IpAddressUtils;
-import com.serotonin.util.queue.*;
-
 import com.serotonin.bacnet4j.LocalDevice;
-import com.serotonin.bacnet4j.RemoteDevice;
-import com.serotonin.bacnet4j.RemoteObject;
 
-import com.serotonin.bacnet4j.base.BACnetUtils;
-
-import com.serotonin.bacnet4j.event.DefaultDeviceEventListener;
-import com.serotonin.bacnet4j.event.DefaultExceptionListener;
-import com.serotonin.bacnet4j.event.DeviceEventListener;
-
-import com.serotonin.bacnet4j.util.PropertyReferences;
-import com.serotonin.bacnet4j.util.PropertyValues;
 
 import com.serotonin.bacnet4j.obj.BACnetObject;
-import com.serotonin.bacnet4j.obj.FileObject;
-
-import com.serotonin.bacnet4j.service.acknowledgement.ReadRangeAck;
-
-import com.serotonin.bacnet4j.service.confirmed.ReadRangeRequest;
-import com.serotonin.bacnet4j.service.confirmed.ReadRangeRequest.BySequenceNumber;
-import com.serotonin.bacnet4j.service.confirmed.ReinitializeDeviceRequest.ReinitializedStateOfDevice;
-
-import com.serotonin.bacnet4j.service.unconfirmed.WhoIsRequest;
-
-import com.serotonin.bacnet4j.type.Encodable;
-
-import com.serotonin.bacnet4j.type.primitive.ObjectIdentifier;
-import com.serotonin.bacnet4j.type.primitive.Real;
-import com.serotonin.bacnet4j.type.primitive.SignedInteger;
-import com.serotonin.bacnet4j.type.primitive.UnsignedInteger;
 
 import com.serotonin.bacnet4j.type.enumerated.BinaryPV;
 import com.serotonin.bacnet4j.type.enumerated.EngineeringUnits;
-import com.serotonin.bacnet4j.type.enumerated.EventState;
-import com.serotonin.bacnet4j.type.enumerated.EventType;
-import com.serotonin.bacnet4j.type.enumerated.FileAccessMethod;
-import com.serotonin.bacnet4j.type.enumerated.MessagePriority;
-import com.serotonin.bacnet4j.type.enumerated.NotifyType;
 import com.serotonin.bacnet4j.type.enumerated.ObjectType;
 import com.serotonin.bacnet4j.type.enumerated.PropertyIdentifier;
 import com.serotonin.bacnet4j.type.enumerated.Segmentation;
-
-import com.serotonin.bacnet4j.type.constructed.Choice;
-import com.serotonin.bacnet4j.type.constructed.DateTime;
-import com.serotonin.bacnet4j.type.constructed.LogRecord;
-import com.serotonin.bacnet4j.type.constructed.ObjectPropertyReference;
-import com.serotonin.bacnet4j.type.constructed.PropertyValue;
-import com.serotonin.bacnet4j.type.constructed.SequenceOf;
-import com.serotonin.bacnet4j.type.constructed.TimeStamp;
-
-import com.serotonin.bacnet4j.type.notificationParameters.NotificationParameters;
-
-import com.serotonin.bacnet4j.type.primitive.Boolean;
 import com.serotonin.bacnet4j.type.primitive.CharacterString;
-import com.serotonin.bacnet4j.type.primitive.ObjectIdentifier;
-import com.serotonin.bacnet4j.type.primitive.SignedInteger;
-import com.serotonin.bacnet4j.type.primitive.Time;
-import com.serotonin.bacnet4j.type.primitive.Date;
-import com.serotonin.bacnet4j.type.primitive.Unsigned16;
-import com.serotonin.bacnet4j.type.primitive.UnsignedInteger;
 
-import com.serotonin.bacnet4j.exception.BACnetException;
-import java.sql.Timestamp;
 
-import org.apache.commons.cli.*;
 
 public class SlaveDevice extends java.util.TimerTask {
 	private static final Logger logger = Logger.getLogger(SlaveDevice.class.getName());
 	
 	
-	static class OIDs {
+	private static class OIDs {
 		Vector<OIDValue> data;
 	}
 
-	static class OIDValue {
+	private static class OIDValue {
 		String uuid; // I'm not sure how these are intended to be used
 		String source;
 
@@ -142,13 +68,13 @@ public class SlaveDevice extends java.util.TimerTask {
 		String objectSource; // system call to execute to get value of object
 	}
 
-	static class OIDValueResponse {
+	private static class OIDValueResponse {
 		String value;
 		int timeStamp; // which bacnet property do we actually want to set with this?
 		String units;
 	}
 
-	class ObjectSource {
+	private class ObjectSource {
 		public BACnetObject object;
 		public String source;
 		public String name;
@@ -165,7 +91,7 @@ public class SlaveDevice extends java.util.TimerTask {
 	private static Config m_config;
 	private static LocalDevice m_ld;
 
-	EngineeringUnits stringToUnits(String value) throws java.text.ParseException 
+	private EngineeringUnits stringToUnits(String value) throws java.text.ParseException 
 	{
 		for (EngineeringUnits units : EngineeringUnits.ALL) {
 			if (units.toString().equalsIgnoreCase(value)) {
@@ -178,7 +104,7 @@ public class SlaveDevice extends java.util.TimerTask {
 	
 	}
 
-	ObjectType stringToType(String value) throws java.text.ParseException {
+	private ObjectType stringToType(String value) throws java.text.ParseException {
 		for (ObjectType type : ObjectType.ALL) {
 			if (type.toString().equalsIgnoreCase(value)) {
 				return type;
@@ -195,7 +121,7 @@ public class SlaveDevice extends java.util.TimerTask {
 		updateObjects();
 	}
 	
-	public void updateObjects() {
+	private void updateObjects() {
 		OIDs values = null;
 
 		if (m_objects == null)
@@ -314,7 +240,7 @@ public class SlaveDevice extends java.util.TimerTask {
 		}	
 	}
 
-	String executeCommand(String cmd) {
+	private String executeCommand(String cmd) {
 		Runtime r = Runtime.getRuntime();
 
 		String returnval = "";
@@ -402,7 +328,7 @@ public class SlaveDevice extends java.util.TimerTask {
 		updateValues();
 	}
 
-	public void updateValues() {
+	private void updateValues() {
 		for (ObjectSource os : m_objects) {
 			try {
 								

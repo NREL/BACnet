@@ -4,7 +4,7 @@ import javax.xml.bind.annotation.XmlElement;
 
 import org.codehaus.jackson.annotate.JsonProperty;
 
-public class GroupKey {
+class GroupKey {
 
 	@JsonProperty("modelName")
 	@XmlElement(name="modelName")

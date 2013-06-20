@@ -37,7 +37,7 @@ import com.serotonin.bacnet4j.type.primitive.ObjectIdentifier;
 import com.serotonin.bacnet4j.util.PropertyReferences;
 import com.serotonin.bacnet4j.util.PropertyValues;
 
-public class TaskFPollDeviceTask implements Runnable, Callable<Object> {
+class TaskFPollDeviceTask implements Runnable, Callable<Object> {
 
 	private static final Logger log = Logger.getLogger(TaskFPollDeviceTask.class.getName());
 	private RemoteDevice rd;
