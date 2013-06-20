@@ -6,7 +6,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class RejectedExecHandler implements RejectedExecutionHandler {
+class RejectedExecHandler implements RejectedExecutionHandler {
 
 	private static final Logger log = Logger.getLogger(RejectedExecHandler.class.getName());
 	

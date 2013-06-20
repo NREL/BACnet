@@ -30,7 +30,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.protocol.BasicHttpContext;
 import org.codehaus.jackson.map.ObjectMapper;
 
-public class MetaLoader {
+class MetaLoader {
 
 	private static final Logger log = Logger.getLogger(MetaLoader.class.getName());
 	private Set<Device> registeredDevices = new HashSet<Device>();

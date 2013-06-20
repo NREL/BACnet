@@ -20,7 +20,7 @@ import com.serotonin.bacnet4j.type.enumerated.PropertyIdentifier;
 import com.serotonin.bacnet4j.type.primitive.ObjectIdentifier;
 import com.serotonin.bacnet4j.util.PropertyReferences;
 
-public class TaskCReadBasicProps implements Runnable, Callable<Object> {
+class TaskCReadBasicProps implements Runnable, Callable<Object> {
 
 	private static final Logger log = Logger.getLogger(TaskCReadBasicProps.class.getName());
 	
