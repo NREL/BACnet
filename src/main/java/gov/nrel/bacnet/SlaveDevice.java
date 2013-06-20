@@ -55,11 +55,11 @@ public class SlaveDevice extends java.util.TimerTask {
 	private static final Logger logger = Logger.getLogger(SlaveDevice.class.getName());
 	
 	
-	static class OIDs {
+	private static class OIDs {
 		Vector<OIDValue> data;
 	}
 
-	static class OIDValue {
+	private static class OIDValue {
 		String uuid; // I'm not sure how these are intended to be used
 		String source;
 
@@ -68,13 +68,13 @@ public class SlaveDevice extends java.util.TimerTask {
 		String objectSource; // system call to execute to get value of object
 	}
 
-	static class OIDValueResponse {
+	private static class OIDValueResponse {
 		String value;
 		int timeStamp; // which bacnet property do we actually want to set with this?
 		String units;
 	}
 
-	class ObjectSource {
+	private class ObjectSource {
 		public BACnetObject object;
 		public String source;
 		public String name;
@@ -91,7 +91,7 @@ public class SlaveDevice extends java.util.TimerTask {
 	private static Config m_config;
 	private static LocalDevice m_ld;
 
-	EngineeringUnits stringToUnits(String value) throws java.text.ParseException 
+	private EngineeringUnits stringToUnits(String value) throws java.text.ParseException 
 	{
 		for (EngineeringUnits units : EngineeringUnits.ALL) {
 			if (units.toString().equalsIgnoreCase(value)) {
@@ -104,7 +104,7 @@ public class SlaveDevice extends java.util.TimerTask {
 	
 	}
 
-	ObjectType stringToType(String value) throws java.text.ParseException {
+	private ObjectType stringToType(String value) throws java.text.ParseException {
 		for (ObjectType type : ObjectType.ALL) {
 			if (type.toString().equalsIgnoreCase(value)) {
 				return type;
@@ -121,7 +121,7 @@ public class SlaveDevice extends java.util.TimerTask {
 		updateObjects();
 	}
 	
-	public void updateObjects() {
+	private void updateObjects() {
 		OIDs values = null;
 
 		if (m_objects == null)
@@ -240,7 +240,7 @@ public class SlaveDevice extends java.util.TimerTask {
 		}	
 	}
 
-	String executeCommand(String cmd) {
+	private String executeCommand(String cmd) {
 		Runtime r = Runtime.getRuntime();
 
 		String returnval = "";
@@ -328,7 +328,7 @@ public class SlaveDevice extends java.util.TimerTask {
 		updateValues();
 	}
 
-	public void updateValues() {
+	private void updateValues() {
 		for (ObjectSource os : m_objects) {
 			try {
 								

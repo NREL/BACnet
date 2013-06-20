@@ -200,7 +200,7 @@ public class Main {
 		}
 	}
 
-	public static Config parseOptions(String[] args) throws Exception {
+	private static Config parseOptions(String[] args) throws Exception {
 
 		int min_id = -1;
 		int max_id = -1;
