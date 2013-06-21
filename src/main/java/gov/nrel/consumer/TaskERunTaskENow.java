@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class TaskERunTaskENow implements Runnable, Callable<Object> {
+class TaskERunTaskENow implements Runnable, Callable<Object> {
 
 	private static final Logger log = Logger.getLogger(TaskERunTaskENow.class.getName());
 	private CountDownLatch latch;

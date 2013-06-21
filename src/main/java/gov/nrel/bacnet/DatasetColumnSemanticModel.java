@@ -8,8 +8,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 @XmlRootElement
-@XmlAccessorType(XmlAccessType.FIELD)
-public class DatasetColumnSemanticModel {
+@XmlAccessorType(XmlAccessType.FIELD) class DatasetColumnSemanticModel {
 
 	@JsonProperty("property")
     @XmlElement(name="property")

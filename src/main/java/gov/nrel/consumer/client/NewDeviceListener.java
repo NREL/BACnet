@@ -9,7 +9,7 @@ import com.serotonin.bacnet4j.event.DefaultDeviceEventListener;
 import com.serotonin.bacnet4j.type.constructed.Address;
 import com.serotonin.bacnet4j.type.primitive.UnsignedInteger;
 
-public class NewDeviceListener extends DefaultDeviceEventListener {
+class NewDeviceListener extends DefaultDeviceEventListener {
 
 	private static final Logger log = Logger.getLogger(NewDeviceListener.class.getName());
 	private RemoteDevice device;

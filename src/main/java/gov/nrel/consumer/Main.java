@@ -18,7 +18,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -201,7 +200,7 @@ public class Main {
 		}
 	}
 
-	public static Config parseOptions(String[] args) throws Exception {
+	private static Config parseOptions(String[] args) throws Exception {
 
 		int min_id = -1;
 		int max_id = -1;
@@ -225,7 +224,7 @@ public class Main {
 		String devname = "eth0";
 
 
-                String filterFile = "../conf/filter.json";
+		String filterFile = "../conf/filter.json";
 		String slaveDeviceConfigFile = "../conf/example_oid.json";
 
 		int slaveDeviceUpdateInterval = 10;
@@ -234,7 +233,7 @@ public class Main {
 
 		boolean scan = true;
 		boolean slaveDeviceEnabled = false;
-                String loggingPropertiesFile = "../conf/logging.properties";
+		String loggingPropertiesFile = "../conf/logging.properties";
 
 		boolean verboseLogging = false;
 		boolean veryVerboseLogging = false;

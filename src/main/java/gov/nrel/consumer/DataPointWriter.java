@@ -8,7 +8,7 @@ import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class DataPointWriter {
+class DataPointWriter {
 
 	private static final Logger log = Logger.getLogger(DataPointWriter.class.getName());
 	

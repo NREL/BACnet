@@ -8,7 +8,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class OurExecutor {
+class OurExecutor {
 
 	private static final Logger log = Logger.getLogger(OurExecutor.class.getName());
 	private ThreadPoolExecutor svc;

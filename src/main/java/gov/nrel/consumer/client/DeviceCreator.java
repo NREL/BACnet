@@ -8,7 +8,7 @@ import java.util.logging.Logger;
 
 import com.serotonin.bacnet4j.LocalDevice;
 
-public class DeviceCreator {
+class DeviceCreator {
 
 	private static final Logger logger = Logger.getLogger(DeviceCreator.class.getName());
 	

@@ -11,7 +11,7 @@ import java.util.logging.Logger;
 
 import com.serotonin.bacnet4j.LocalDevice;
 
-public class TaskADiscoverAll implements Runnable, Callable<Object> {
+class TaskADiscoverAll implements Runnable, Callable<Object> {
 
 	private static final Logger log = Logger.getLogger(TaskADiscoverAll.class.getName());
 	private LocalDevice localDevice;
