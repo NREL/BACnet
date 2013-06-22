@@ -51,15 +51,15 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object> {
 	private Map<ObjectIdentifier, Stream> streams = new HashMap<ObjectIdentifier, Stream>();
 	
 	private Random r = new Random(System.currentTimeMillis());
-	private DataPointWriter writer;
+	private List<BACnetDataWriter> writers;
 	private OurExecutor exec;
 	private static int peakQueueSize = 0;
 	
-	public TaskFPollDeviceTask(RemoteDevice d, LocalDevice local, OurExecutor exec, DataPointWriter writer) {
+	public TaskFPollDeviceTask(RemoteDevice d, LocalDevice local, OurExecutor exec, List<BACnetDataWriter> writers) {
 		this.rd = d;
 		this.m_localDevice = local;
 		this.exec = exec;
-		this.writer = writer;
+		this.writers = writers;
 	}
 
 	@Override
@@ -180,7 +180,7 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object> {
 		int active = recService.getActiveCount();
 		
 		log.info("launching databus writer.  active="+active+" queueCnt="+exec.getRecorderQueueCount());
-		TaskGRecordTask task = new TaskGRecordTask(data, writer);
+		TaskGRecordTask task = new TaskGRecordTask(data, writers);
 		
 		exec.getRecorderService().execute(task);
 	}

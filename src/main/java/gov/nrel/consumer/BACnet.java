@@ -12,6 +12,7 @@ import java.io.Reader;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -73,7 +74,9 @@ public class BACnet {
 			LocalDevice.setExceptionListener(new MyExceptionListener());
 			initialize(config);
 
-			TaskADiscoverAll all = new TaskADiscoverAll(localDevice, exec, config, filters, writer);
+			List<BACnetDataWriter> writers = new ArrayList<BACnetDataWriter>();
+			writers.add(new DatabusDataWriter(writer));
+			TaskADiscoverAll all = new TaskADiscoverAll(localDevice, exec, config, filters, writers);
 			backgroundDiscoverer = svc.scheduleAtFixedRate(all, 0, config.getScanInterval(), TimeUnit.HOURS);
 		} catch(Throwable e) {
 			logger.log(Level.WARNING, "exception starting", e);
@@ -182,7 +185,7 @@ public class BACnet {
 			sender = new DatabusSender(username, key, deviceTable, streamTable, recorderSvc, config.getDatabusUrl(), config.getDatabusPort(), true);
 		}
 
-		DataPointWriter writer = new DataPointWriter(sender);
+		writer = new DataPointWriter(sender);
 		
 		logger.info("Kicking off scanner object to run every "+config.getScanInterval()+" hours with broadcasts every "+config.getBroadcastInterval()+" seconds");
 	}

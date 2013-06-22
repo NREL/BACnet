@@ -1,7 +1,7 @@
 package gov.nrel.consumer.beans;
 
 import gov.nrel.consumer.PropertiesReader;
-import gov.nrel.consumer.TaskGRecordTask;
+import gov.nrel.consumer.DatabusDataWriter;
 import java.util.logging.Logger;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +33,7 @@ public class JsonAllFilters {
 		if(interval == null)
 			interval = 120*60; //120 minutes * 60 seconds/minute
 		
-		String deviceId = TaskGRecordTask.BACNET_PREFIX+remoteDevice.getInstanceNumber();
+		String deviceId = DatabusDataWriter.BACNET_PREFIX+remoteDevice.getInstanceNumber();
 		String tableName = PropertiesReader.formTableName(deviceId, oid);
 		log.info("For table="+tableName+" we are using an interval="+interval);
 		return interval;

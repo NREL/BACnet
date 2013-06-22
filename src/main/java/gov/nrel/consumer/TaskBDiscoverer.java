@@ -36,15 +36,15 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 	private int range;
 	private JsonAllFilters deviceConfig;
 	private Config config;
-	private DataPointWriter dataPointWriter;
+	private List<BACnetDataWriter> bacnetDataWriters;
 	private OurExecutor exec;
 	
-	public TaskBDiscoverer(LocalDevice localDevice, OurExecutor exec, Config config, JsonAllFilters deviceConfig2, DataPointWriter writer) {
+	public TaskBDiscoverer(LocalDevice localDevice, OurExecutor exec, Config config, JsonAllFilters deviceConfig2, List<BACnetDataWriter> writers) {
 		this.m_localDevice = localDevice;
 		this.deviceConfig = deviceConfig2;
 		this.config = config;
 		this.range= config.getRange();
-		this.dataPointWriter = writer;
+		this.bacnetDataWriters = writers;
 		this.exec = exec;
 		
 		newDeviceListener = new NewDeviceHandler();
@@ -108,7 +108,7 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 		CountDownLatch latch = new CountDownLatch(partitions.size()); //+1 is for the failures
 		for(List<TaskFPollDeviceTask> partition : partitions) {
 			log.info("Scheduling partition to run immediately.  size="+partition.size());
-			Runnable taskC = new TaskCReadBasicProps(counter, m_localDevice, exec, partition, deviceConfig, latch, dataPointWriter);
+			Runnable taskC = new TaskCReadBasicProps(counter, m_localDevice, exec, partition, deviceConfig, latch, bacnetDataWriters);
 			svc.schedule(taskC, 0, TimeUnit.SECONDS);
 			counter++;
 		}
@@ -197,7 +197,7 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 				int numDevices = devices.size();
 				log.info("Device found: "+d+" total devices="+numDevices);
 				
-				TaskFPollDeviceTask st = new TaskFPollDeviceTask(d, m_localDevice, exec, dataPointWriter);
+				TaskFPollDeviceTask st = new TaskFPollDeviceTask(d, m_localDevice, exec, bacnetDataWriters);
 				deviceStates.add(st);
 			}
 		}
