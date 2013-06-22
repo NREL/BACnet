@@ -170,7 +170,7 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object> {
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd-hh:mm:ss.SSS");
 		String time = fmt.format(new Date());
 		
-		List<DatabusBean> data = new ArrayList<DatabusBean>();
+		List<BACnetData> data = new ArrayList<BACnetData>();
 		Iterator<ObjectPropertyReference> propRefs = pvs.iterator();
 		while(propRefs.hasNext()) {
 			printDataPoint(propRefs.next(), pvs, time, curTime, data);
@@ -203,32 +203,13 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object> {
 	}
 
 	private void printDataPoint(ObjectPropertyReference next,
-			PropertyValues pvs, String time, long curTime, List<DatabusBean> data) {
+			PropertyValues pvs, String time, long curTime, List<BACnetData> data) {
 		
-		ObjectIdentifier oid = next.getObjectIdentifier();
-		Encodable presentValue = tryGetValue(oid, pvs, PropertyIdentifier.presentValue);
-		
-		String deviceId = TaskGRecordTask.BACNET_PREFIX+rd.getInstanceNumber();
-		String tableName = PropertiesReader.formTableName(deviceId, oid);
-
-		String valStr = toString(presentValue);
-		Double dVal = null;
-		if(valStr != null)
-			dVal = new Double(valStr);
-		
-		DatabusBean d = new DatabusBean();
-		d.setTableName(tableName);
-		d.setValue(dVal);
-		d.setTime(curTime);
-		
+		BACnetData d = new BACnetData(next.getObjectIdentifier(), tryGetValue(next.getObjectIdentifier(),
+		      pvs, PropertyIdentifier.presentValue), rd.getInstanceNumber(), curTime);
 		data.add(d);
 	}
 
-	private String toString(Object val) {
-		if(val == null)
-			return null;
-		return ""+val;
-	}
 
 	private Encodable tryGetValue(ObjectIdentifier oid,
 			PropertyValues pvs, PropertyIdentifier propId) {
