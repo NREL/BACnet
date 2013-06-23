@@ -255,14 +255,14 @@ public class BACnet {
 
 		CommandLineParser parser = new PosixParser();
 		Options options = new Options();
-//		options.addOption("m", "min-device-id", true,
-//				"Minimum device ID to scan for, default: " + min_id);
-//		options.addOption("M", "max-device-id", true,
-//				"Maximum device ID to scan for, default: " + max_id);
+		options.addOption("m", "min-device-id", true,
+				"Minimum device ID to scan for, default: " + min_id);
+		options.addOption("M", "max-device-id", true,
+				"Maximum device ID to scan for, default: " + max_id);
 		options.addOption("i", "id", true,
 				"Device ID of this software, default: " + device_id);
-//		options.addOption("D", "device-id", true,
-//				"device ID to scan, exclusive of min-device-id and max-device-id");
+		options.addOption("D", "device-id", true,
+				"device ID to scan, exclusive of min-device-id and max-device-id");
 		options.addOption("f", "filter-file", true,
 				"JSON filter file to use during scanning, default: " + filterFile);
 		options.addOption("d", "dev", true,
@@ -391,14 +391,19 @@ public class BACnet {
 
 			slaveDeviceEnabled = line.hasOption("S");
 
-			/*
+		
 			min_id = Integer.parseInt(line.getOptionValue("m", "-1"));
 			max_id = min_id;
 
 			max_id = Integer.parseInt(line.getOptionValue("M", "-1"));
 
-			if (min_id == -1 && max_id > -1) {
+			if (min_id == -1) {
 				min_id = 0;
+			}
+
+			if (max_id == -1)
+			{
+				max_id = 4000000;
 			}
 
 			if (line.hasOption("m") && !line.hasOption("M")) {
@@ -418,7 +423,7 @@ public class BACnet {
 						options, "", true);
 				System.exit(-1);
 			}
-			*/
+			
 
 			if (line.hasOption("D")
 					&& (line.hasOption("m") || line.hasOption("M"))) {
@@ -487,7 +492,8 @@ public class BACnet {
 		Config config = new Config(scanInterval, broadcastInterval, range, numThreads, devname, verboseLogging,
 		    veryVerboseLogging, device_id, filterFile, loggingPropertiesFile, databusEnabled,
 		    databusDeviceTable, databusStreamTable, databusUserName, databusKey,
-		    databusURL, databusPort, slaveDeviceEnabled, slaveDeviceConfigFile, slaveDeviceUpdateInterval);
+		    databusURL, databusPort, slaveDeviceEnabled, slaveDeviceConfigFile, slaveDeviceUpdateInterval,
+		    min_id, max_id);
 
 		return config;
 	}

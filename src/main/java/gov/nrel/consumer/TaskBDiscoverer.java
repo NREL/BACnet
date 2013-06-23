@@ -32,6 +32,7 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 	private LocalDevice m_localDevice;
 	private NewDeviceHandler newDeviceListener;
 	private int counter = 0;
+	private int maxCounter = 0;
 	private ScheduledFuture<?> future;
 	private int range;
 	private JsonAllFilters deviceConfig;
@@ -43,9 +44,11 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 		this.m_localDevice = localDevice;
 		this.deviceConfig = deviceConfig2;
 		this.config = config;
-		this.range= config.getRange();
+		this.range = config.getRange();
 		this.bacnetDataWriters = writers;
 		this.exec = exec;
+		this.counter = config.getMinId();
+		this.maxCounter = config.getMaxId();
 		
 		newDeviceListener = new NewDeviceHandler();
 		m_localDevice.getEventHandler().addListener(newDeviceListener);
@@ -79,7 +82,7 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 		if(counter > 65000)
 			range = 1000000;
 
-		if(counter > 4000000) {
+		if(counter > maxCounter) {
 			log.info("future="+future);
 			future.cancel(true);
 			
@@ -89,6 +92,11 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 		
 		int min = counter;
 		int max = counter+range-1;
+
+		if (max > maxCounter) {
+		  max = maxCounter;
+		}
+
 		broadcastWhois(m_localDevice, min, max);
 		log.info("sent broadcast request, will be receiving responses for who knows how long");
 	}
