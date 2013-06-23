@@ -94,7 +94,7 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 		int max = counter+range-1;
 
 		if (max > maxCounter) {
-		  max = maxCounter;
+			max = maxCounter;
 		}
 
 		broadcastWhois(m_localDevice, min, max);
@@ -118,7 +118,7 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 			log.info("Scheduling partition to run immediately.  size="+partition.size());
 			Runnable taskC = new TaskCReadBasicProps(counter, m_localDevice, exec, partition, deviceConfig, latch, bacnetDataWriters);
 			svc.schedule(taskC, 0, TimeUnit.SECONDS);
-			counter++;
+			++counter;
 		}
 
 //		//NOTE: We KNOW the thread count so this runs 
@@ -160,8 +160,8 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 			whois = new WhoIsRequest();
 		} else if(low < 0) {
 			throw new IllegalArgumentException("low end cannot be less than 0. low="+low);
-		} else if(high <= low) {
-			throw new IllegalArgumentException("high must be greater than low.  high="+high+" low="+low);
+		} else if(high < low) {
+			throw new IllegalArgumentException("high must be greater than or equal to low.  high="+high+" low="+low);
 		} else {
 			log.info("Scanning device ids: " + low + " to " + high);
 
