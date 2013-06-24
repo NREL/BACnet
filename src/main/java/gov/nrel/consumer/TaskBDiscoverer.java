@@ -32,20 +32,23 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 	private LocalDevice m_localDevice;
 	private NewDeviceHandler newDeviceListener;
 	private int counter = 0;
+	private int maxCounter = 0;
 	private ScheduledFuture<?> future;
 	private int range;
 	private JsonAllFilters deviceConfig;
 	private Config config;
-	private DataPointWriter dataPointWriter;
+	private List<BACnetDataWriter> bacnetDataWriters;
 	private OurExecutor exec;
 	
-	public TaskBDiscoverer(LocalDevice localDevice, OurExecutor exec, Config config, JsonAllFilters deviceConfig2, DataPointWriter writer) {
+	public TaskBDiscoverer(LocalDevice localDevice, OurExecutor exec, Config config, JsonAllFilters deviceConfig2, List<BACnetDataWriter> writers) {
 		this.m_localDevice = localDevice;
 		this.deviceConfig = deviceConfig2;
 		this.config = config;
-		this.range= config.getRange();
-		this.dataPointWriter = writer;
+		this.range = config.getRange();
+		this.bacnetDataWriters = writers;
 		this.exec = exec;
+		this.counter = config.getMinId();
+		this.maxCounter = config.getMaxId();
 		
 		newDeviceListener = new NewDeviceHandler();
 		m_localDevice.getEventHandler().addListener(newDeviceListener);
@@ -79,7 +82,7 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 		if(counter > 65000)
 			range = 1000000;
 
-		if(counter > 4000000) {
+		if(counter > maxCounter) {
 			log.info("future="+future);
 			future.cancel(true);
 			
@@ -89,6 +92,11 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 		
 		int min = counter;
 		int max = counter+range-1;
+
+		if (max > maxCounter) {
+			max = maxCounter;
+		}
+
 		broadcastWhois(m_localDevice, min, max);
 		log.info("sent broadcast request, will be receiving responses for who knows how long");
 	}
@@ -108,9 +116,9 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 		CountDownLatch latch = new CountDownLatch(partitions.size()); //+1 is for the failures
 		for(List<TaskFPollDeviceTask> partition : partitions) {
 			log.info("Scheduling partition to run immediately.  size="+partition.size());
-			Runnable taskC = new TaskCReadBasicProps(counter, m_localDevice, exec, partition, deviceConfig, latch, dataPointWriter);
+			Runnable taskC = new TaskCReadBasicProps(counter, m_localDevice, exec, partition, deviceConfig, latch, bacnetDataWriters);
 			svc.schedule(taskC, 0, TimeUnit.SECONDS);
-			counter++;
+			++counter;
 		}
 
 //		//NOTE: We KNOW the thread count so this runs 
@@ -152,8 +160,8 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 			whois = new WhoIsRequest();
 		} else if(low < 0) {
 			throw new IllegalArgumentException("low end cannot be less than 0. low="+low);
-		} else if(high <= low) {
-			throw new IllegalArgumentException("high must be greater than low.  high="+high+" low="+low);
+		} else if(high < low) {
+			throw new IllegalArgumentException("high must be greater than or equal to low.  high="+high+" low="+low);
 		} else {
 			log.info("Scanning device ids: " + low + " to " + high);
 
@@ -197,7 +205,7 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 				int numDevices = devices.size();
 				log.info("Device found: "+d+" total devices="+numDevices);
 				
-				TaskFPollDeviceTask st = new TaskFPollDeviceTask(d, m_localDevice, exec, dataPointWriter);
+				TaskFPollDeviceTask st = new TaskFPollDeviceTask(d, m_localDevice, exec, bacnetDataWriters);
 				deviceStates.add(st);
 			}
 		}

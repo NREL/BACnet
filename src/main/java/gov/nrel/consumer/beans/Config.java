@@ -27,11 +27,14 @@ public class Config {
 	private boolean slaveDeviceEnabled;
 	private String slaveDeviceConfigFile;
 	private int slaveDeviceUpdateInterval;
+	private int minId;
+	private int maxId;
 
 	public Config(int scanInterval, int broadcastInterval, int range, int numThreads, String networkDevice, boolean verboseLogging,
 	    boolean veryVerboseLogging, int deviceId, String filterFileName, String loggingPropertiesFileName, boolean databusEnabled,
 	    String databusDeviceTable, String databusStreamTable, String databusUserName, String databusKey,
-	    String databusUrl, int databusPort, boolean slaveDeviceEnabled, String slaveDeviceConfigFile, int slaveDeviceUpdateInterval) {
+	    String databusUrl, int databusPort, boolean slaveDeviceEnabled, String slaveDeviceConfigFile, int slaveDeviceUpdateInterval,
+	    int minId, int maxId) {
 		this.scanInterval = scanInterval;
 		this.broadcastInterval = broadcastInterval;
 		this.range = range;
@@ -52,6 +55,8 @@ public class Config {
 		this.slaveDeviceEnabled = slaveDeviceEnabled;
 		this.slaveDeviceConfigFile = slaveDeviceConfigFile;
 		this.slaveDeviceUpdateInterval = slaveDeviceUpdateInterval;
+		this.minId = minId;
+		this.maxId = maxId;
 
 
 		logger.info("Config initialized scanInterval: " + this.scanInterval);
@@ -74,6 +79,8 @@ public class Config {
 		logger.info("Config initialized slaveDeviceEnabled: " + this.slaveDeviceEnabled);
 		logger.info("Config initialized slaveDeviceConfigFile: " + this.slaveDeviceConfigFile);
 		logger.info("Config initialized slaveDeviceUpdateInterval: " + this.slaveDeviceUpdateInterval);
+		logger.info("Config initialized minId: " + this.minId);
+		logger.info("Config initialized maxId: " + this.maxId);
 	}
 
 	public String getLoggingPropertiesFileName() {
@@ -153,6 +160,14 @@ public class Config {
 
 	public int getSlaveDeviceUpdateInterval() {
 		return slaveDeviceUpdateInterval;
+	}
+
+	public int getMinId() {
+		return minId;
+	}
+
+	public int getMaxId() {
+		return maxId;
 	}
 	
 
