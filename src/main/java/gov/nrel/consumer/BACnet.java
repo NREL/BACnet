@@ -12,8 +12,10 @@ import java.io.Reader;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -74,13 +76,63 @@ public class BACnet {
 			LocalDevice.setExceptionListener(new MyExceptionListener());
 			initialize(config);
 
-			List<BACnetDataWriter> writers = new ArrayList<BACnetDataWriter>();
-			writers.add(new DatabusDataWriter(writer));
-			TaskADiscoverAll all = new TaskADiscoverAll(localDevice, exec, config, filters, writers);
-			backgroundDiscoverer = svc.scheduleAtFixedRate(all, 0, config.getScanInterval(), TimeUnit.HOURS);
 		} catch(Throwable e) {
 			logger.log(Level.WARNING, "exception starting", e);
 		}
+	}
+
+	public JsonAllFilters getDefaultFilters()
+	{
+		return filters;
+	}
+
+	public JsonAllFilters parseFilters(String filters)
+	{
+		com.google.gson.Gson gson = new com.google.gson.Gson();
+		return gson.fromJson(filters, JsonAllFilters.class);
+	}
+
+	public void initializeDefaultScanner()
+	{
+		backgroundDiscoverer = scheduleScan(config.getMinId(), config.getMaxId(), getDefaultFilters(), getDefaultDataWriters(), 
+			config.getScanInterval());
+	}
+
+	public ScheduledFuture<?> scheduleScan(int id, JsonAllFilters filters, BACnetDataWriter[] writers, int intervalInHours)
+	{
+	  return scheduleScan(id, id, filters, writers, intervalInHours);
+	}
+
+	public ScheduledFuture<?> scheduleScan(int minId, int maxId, JsonAllFilters filters, BACnetDataWriter[] writers, int intervalInHours)
+	{
+		Config newconfig =
+			new Config(
+				intervalInHours, config.getBroadcastInterval(), config.getRange(), config.getNumThreads(), config.getNetworkDevice(), 
+				config.getVerboseLogging(), config.getVeryVerboseLogging(), config.getDeviceId(), config.getFilterFileName(), 
+				config.getLoggingPropertiesFileName(), config.getDatabusEnabled(), config.getDatabusDeviceTable(), 
+				config.getDatabusStreamTable(), config.getDatabusUserName(), config.getDatabusKey(),
+				config.getDatabusUrl(), config.getDatabusPort(), config.getSlaveDeviceEnabled(), config.getSlaveDeviceConfigFile(), 
+				config.getSlaveDeviceUpdateInterval(), minId, maxId
+			);
+		
+		TaskADiscoverAll all = new TaskADiscoverAll(localDevice, exec, newconfig, filters, Arrays.asList(writers));
+		return svc.scheduleAtFixedRate(all, 0, newconfig.getScanInterval(), TimeUnit.HOURS);
+	}
+
+	public ScheduledFuture<?> scheduleScan(int minId, int maxId, JsonAllFilters filters, BACnetDataWriter[] writers)
+	{
+		Config newconfig =
+			new Config(
+				0, config.getBroadcastInterval(), config.getRange(), config.getNumThreads(), config.getNetworkDevice(), 
+				config.getVerboseLogging(), config.getVeryVerboseLogging(), config.getDeviceId(), config.getFilterFileName(), 
+				config.getLoggingPropertiesFileName(), config.getDatabusEnabled(), config.getDatabusDeviceTable(), 
+				config.getDatabusStreamTable(), config.getDatabusUserName(), config.getDatabusKey(),
+				config.getDatabusUrl(), config.getDatabusPort(), config.getSlaveDeviceEnabled(), config.getSlaveDeviceConfigFile(), 
+				config.getSlaveDeviceUpdateInterval(), minId, maxId
+			);
+		
+		TaskADiscoverAll all = new TaskADiscoverAll(localDevice, exec, newconfig, filters, Arrays.asList(writers));
+		return svc.schedule((Callable<Object>)all, 0, TimeUnit.HOURS);
 	}
 
 
@@ -151,10 +203,9 @@ public class BACnet {
 
 		String file = config.getFilterFileName();
 		String filterfile = readFile(file, Charset.forName("US-ASCII"));
-		com.google.gson.Gson gson = new com.google.gson.Gson();
 
 		logger.info("using filter file:" + file);
-		filters = gson.fromJson(filterfile, JsonAllFilters.class);
+		filters = parseFilters(filterfile);
 
 		int counter = 0;
 		for(JsonObjectData d : filters.getFilters()) {
@@ -210,6 +261,13 @@ public class BACnet {
 			// method which would log exceptions and swallow them
 			stream.close();
 		}
+	}
+
+	public BACnetDataWriter[] getDefaultDataWriters()
+	{
+		BACnetDataWriter[] array = new BACnetDataWriter[1];
+		array[0] = new DatabusDataWriter(writer);
+		return array;
 	}
 
 	public static Config parseOptions(String[] args) throws Exception {
