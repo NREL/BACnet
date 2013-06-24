@@ -56,8 +56,7 @@ import org.codehaus.jackson.map.ObjectMapper;
  * @author abeach
  */
 class DatabusSender {
-	private static final Logger log = Logger.getLogger(DatabusSender.class
-			.getName());
+	private static final Logger log = Logger.getLogger(DatabusSender.class.getName());
 
 	private DefaultHttpClient httpclient;
 	private ObjectMapper mapper = new ObjectMapper();

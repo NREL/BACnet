@@ -31,13 +31,13 @@ class TaskCReadBasicProps implements Runnable, Callable<Object> {
 	private LocalDevice m_localDevice;
 	private CountDownLatch latch;
 	private OurExecutor exec;
-	private DataPointWriter writer;
+	private List<BACnetDataWriter> writers;
 
 	private PropertiesReader propReader;
 	private String id;
 	
 	public TaskCReadBasicProps(int counter, LocalDevice local, OurExecutor exec, List<TaskFPollDeviceTask> devices,
-			JsonAllFilters deviceConfig2, CountDownLatch latch, DataPointWriter dataPointWriter) {
+			JsonAllFilters deviceConfig2, CountDownLatch latch, List<BACnetDataWriter> writers) {
 		this.id = "task"+counter;
 		this.m_localDevice = local;
 		this.propReader = new PropertiesReader(local);
@@ -45,7 +45,7 @@ class TaskCReadBasicProps implements Runnable, Callable<Object> {
 		this.devices = devices;
 		this.deviceConfig = deviceConfig2;
 		this.latch = latch;
-		this.writer = dataPointWriter;
+		this.writers = writers;
 	}
 
 	@Override
@@ -98,12 +98,22 @@ class TaskCReadBasicProps implements Runnable, Callable<Object> {
 		List<ObjectIdentifier> oids = readInDeviceOidsAndBaseProperties(st, streams, dev, id, counter2);
 
 		log.info(id+"posting streams="+streams.size()+" c="+counter2);
-		DatabusSender sender = writer.getSender();
 
-		if (sender != null)
+		for (BACnetDataWriter writer : writers)
 		{
-			for(Stream str : streams) {
-				sender.postNewStream(str, dev, "bacnet", id);
+		 	try {
+				DatabusDataWriter databusWriter = (DatabusDataWriter)writer;
+
+				DatabusSender sender = databusWriter.getSender();
+
+				if (sender != null)
+				{
+					for(Stream str : streams) {
+						sender.postNewStream(str, dev, "bacnet", id);
+					}
+				}
+			} catch (ClassCastException e) {
+				// this is not the type we're looking for
 			}
 		}
 
@@ -128,7 +138,7 @@ class TaskCReadBasicProps implements Runnable, Callable<Object> {
 		String endUse = "unknown";
 		String protocol = "BACNet";
 
-		String deviceId = TaskGRecordTask.BACNET_PREFIX+rd.getInstanceNumber();
+		String deviceId = DatabusDataWriter.BACNET_PREFIX+rd.getInstanceNumber();
 		
 		log.info("setting up deviceobject="+deviceId);
 		

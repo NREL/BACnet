@@ -51,15 +51,15 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object> {
 	private Map<ObjectIdentifier, Stream> streams = new HashMap<ObjectIdentifier, Stream>();
 	
 	private Random r = new Random(System.currentTimeMillis());
-	private DataPointWriter writer;
+	private List<BACnetDataWriter> writers;
 	private OurExecutor exec;
 	private static int peakQueueSize = 0;
 	
-	public TaskFPollDeviceTask(RemoteDevice d, LocalDevice local, OurExecutor exec, DataPointWriter writer) {
+	public TaskFPollDeviceTask(RemoteDevice d, LocalDevice local, OurExecutor exec, List<BACnetDataWriter> writers) {
 		this.rd = d;
 		this.m_localDevice = local;
 		this.exec = exec;
-		this.writer = writer;
+		this.writers = writers;
 	}
 
 	@Override
@@ -170,7 +170,7 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object> {
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd-hh:mm:ss.SSS");
 		String time = fmt.format(new Date());
 		
-		List<DatabusBean> data = new ArrayList<DatabusBean>();
+		List<BACnetData> data = new ArrayList<BACnetData>();
 		Iterator<ObjectPropertyReference> propRefs = pvs.iterator();
 		while(propRefs.hasNext()) {
 			printDataPoint(propRefs.next(), pvs, time, curTime, data);
@@ -180,7 +180,7 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object> {
 		int active = recService.getActiveCount();
 		
 		log.info("launching databus writer.  active="+active+" queueCnt="+exec.getRecorderQueueCount());
-		TaskGRecordTask task = new TaskGRecordTask(data, writer);
+		TaskGRecordTask task = new TaskGRecordTask(data, writers);
 		
 		exec.getRecorderService().execute(task);
 	}
@@ -203,32 +203,13 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object> {
 	}
 
 	private void printDataPoint(ObjectPropertyReference next,
-			PropertyValues pvs, String time, long curTime, List<DatabusBean> data) {
+			PropertyValues pvs, String time, long curTime, List<BACnetData> data) {
 		
-		ObjectIdentifier oid = next.getObjectIdentifier();
-		Encodable presentValue = tryGetValue(oid, pvs, PropertyIdentifier.presentValue);
-		
-		String deviceId = TaskGRecordTask.BACNET_PREFIX+rd.getInstanceNumber();
-		String tableName = PropertiesReader.formTableName(deviceId, oid);
-
-		String valStr = toString(presentValue);
-		Double dVal = null;
-		if(valStr != null)
-			dVal = new Double(valStr);
-		
-		DatabusBean d = new DatabusBean();
-		d.setTableName(tableName);
-		d.setValue(dVal);
-		d.setTime(curTime);
-		
+		BACnetData d = new BACnetData(next.getObjectIdentifier(), tryGetValue(next.getObjectIdentifier(),
+		      pvs, PropertyIdentifier.presentValue), rd.getInstanceNumber(), curTime);
 		data.add(d);
 	}
 
-	private String toString(Object val) {
-		if(val == null)
-			return null;
-		return ""+val;
-	}
 
 	private Encodable tryGetValue(ObjectIdentifier oid,
 			PropertyValues pvs, PropertyIdentifier propId) {
