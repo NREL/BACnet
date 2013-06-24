@@ -135,6 +135,10 @@ public class BACnet {
 		return svc.schedule((Callable<Object>)all, 0, TimeUnit.HOURS);
 	}
 
+	public ScheduledFuture<?> scheduleScan(int id, JsonAllFilters filters, BACnetDataWriter[] writers)
+	{
+	  return scheduleScan(id, id, filters, writers);
+	}
 
 
 	private void initialize(Config config) throws IOException {

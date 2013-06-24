@@ -2,7 +2,10 @@ package gov.nrel.consumer;
 
 import java.util.List;
 
-abstract class BACnetDataWriter {
+public abstract class BACnetDataWriter {
+	public BACnetDataWriter() {
+	}
+
 	public synchronized void write(List<BACnetData> data) throws Exception
 	{
 	  writeImpl(data);
