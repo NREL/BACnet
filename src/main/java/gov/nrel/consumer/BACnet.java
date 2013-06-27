@@ -45,7 +45,7 @@ public class BACnet {
 	private ExecutorService recorderSvc;
 	private Timer slaveDeviceTimer;
 	private OurExecutor exec;
-	private DataPointWriter writer;
+	private DatabusDataWriter writer;
 	private ScheduledFuture<?> backgroundDiscoverer;
 	private Config config;
 	private LocalDevice localDevice;
@@ -94,7 +94,9 @@ public class BACnet {
 
 	public void initializeDefaultScanner()
 	{
-		backgroundDiscoverer = scheduleScan(config.getMinId(), config.getMaxId(), getDefaultFilters(), getDefaultDataWriters(), 
+		BACnetDataWriter[] writers = new BACnetDataWriter[1];
+		writers[0] = getDatabusDataWriter();
+		backgroundDiscoverer = scheduleScan(config.getMinId(), config.getMaxId(), getDefaultFilters(), writers, 
 			config.getScanInterval());
 	}
 
@@ -240,7 +242,7 @@ public class BACnet {
 			sender = new DatabusSender(username, key, deviceTable, streamTable, recorderSvc, config.getDatabusUrl(), config.getDatabusPort(), true);
 		}
 
-		writer = new DataPointWriter(sender);
+		writer = new DatabusDataWriter(new DataPointWriter(sender));
 		
 		logger.info("Kicking off scanner object to run every "+config.getScanInterval()+" hours with broadcasts every "+config.getBroadcastInterval()+" seconds");
 	}
@@ -267,11 +269,9 @@ public class BACnet {
 		}
 	}
 
-	public BACnetDataWriter[] getDefaultDataWriters()
+	public BACnetDataWriter getDatabusDataWriter()
 	{
-		BACnetDataWriter[] array = new BACnetDataWriter[1];
-		array[0] = new DatabusDataWriter(writer);
-		return array;
+		return writer;
 	}
 
 	public static Config parseOptions(String[] args) throws Exception {
