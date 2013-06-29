@@ -1,5 +1,5 @@
 require 'java'
-Dir["../build/bacnet/lib/\*.jar"].each { |jar| require jar }
+Dir["../lib/\*.jar"].each { |jar| require jar }
 
 
 require 'sinatra/base'
@@ -9,7 +9,7 @@ def gov
 end
 
 
-class Writer < gov.nrel.consumer.BACnetDataWriter
+class Writer < gov.nrel.bacnet.consumer.BACnetDataWriter
 
   def writeImpl(data)
     data.each { |item| 
@@ -23,8 +23,8 @@ end
 
 
 begin
-  $config = gov.nrel.consumer.BACnet.parseOptions(ARGV)
-  $bacnet = gov.nrel.consumer.BACnet.new($config)
+  $config = gov.nrel.bacnet.consumer.BACnet.parseOptions(ARGV)
+  $bacnet = gov.nrel.bacnet.consumer.BACnet.new($config)
   $bacnet.initializeDefaultScanner
 
 
