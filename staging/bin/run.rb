@@ -20,10 +20,22 @@ class Writer < gov.nrel.bacnet.consumer.BACnetDataWriter
   def deviceDiscoveredImpl(device)
     puts "Ruby BACnetDataWriter device: " + device
   end
+
 end
 
+class Logger < gov.nrel.bacnet.consumer.LogHandler
+  def initialize
+    @records = []
+  end
 
+  def publishRecordImpl(record)
+    @records << record
+  end
 
+  def getRecordsImpl
+    return @records.to_java(java.util.logging.LogRecord)
+  end
+end
 
 
 begin
@@ -36,6 +48,7 @@ begin
   $bacnetWriters["databus"] = $bacnet.getDatabusDataWriter
   $bacnetWriters["stdout"] = Writer.new
 
+  $bacnet.setLogger(Logger.new)
    
 
 rescue java.lang.Throwable => e
@@ -49,6 +62,21 @@ class SinatraApp < Sinatra::Base
 
   get '/' do
     "BACnet Scanner Service"
+  end
+
+  get '/logmessages' do
+    messages = $bacnet.getLogger.getRecords
+
+    formatter = java.util.logging.SimpleFormatter.new
+
+    body = ""
+
+    messages.each { |message| 
+      body += formatter.format(message) + "<br/>"
+    }
+
+    return body;
+
   end
 
   post '/scan/:minId/:maxId/:writer' do

@@ -50,12 +50,14 @@ public class BACnet {
 	private Config config;
 	private LocalDevice localDevice;
 	private JsonAllFilters filters;
+	private LogHandler logHandler;
 
         public BACnet(Config t_config)
 	{
 		config = t_config;
 		localDevice = null;
 		filters = null;
+		logHandler = null;
 
 		try {
 			logger.info("starting.  Loading logging.properties first to log to a file in logs directory");
@@ -80,6 +82,26 @@ public class BACnet {
 			logger.log(Level.WARNING, "exception starting", e);
 		}
 	}
+
+	public void setLogger(LogHandler h)
+	{
+		logger.info("Setting new loghandler");
+
+		if (logHandler != null)
+		{
+			Logger.getLogger("gov.nrel.bacnet").removeHandler(logHandler);
+		}
+
+		logHandler = h;
+
+		Logger.getLogger("gov.nrel.bacnet").addHandler(logHandler);
+	}
+
+	public LogHandler getLogger()
+	{
+		return logHandler;
+	}
+
 
 	public JsonAllFilters getDefaultFilters()
 	{
