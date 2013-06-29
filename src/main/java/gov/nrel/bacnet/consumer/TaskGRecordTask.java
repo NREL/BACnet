@@ -45,7 +45,7 @@ public class TaskGRecordTask implements Runnable {
 
 	private void runImpl() throws Exception {
 		for (BACnetDataWriter writer : writers) {
-			writer.write(data);
+			writer.oidsDiscovered(data);
 		}
 	}
 

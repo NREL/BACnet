@@ -205,6 +205,14 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 				int numDevices = devices.size();
 				log.info("Device found: "+d+" total devices="+numDevices);
 				
+				for (BACnetDataWriter writer : bacnetDataWriters) {
+					try {
+						writer.deviceDiscovered(d);
+					} catch (Exception e) {
+						log.log(Level.WARNING, "Error writing deviceDiscovered data", e);
+					}
+				}
+
 				TaskFPollDeviceTask st = new TaskFPollDeviceTask(d, m_localDevice, exec, bacnetDataWriters);
 				deviceStates.add(st);
 			}

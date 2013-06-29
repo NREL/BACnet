@@ -11,10 +11,14 @@ end
 
 class Writer < gov.nrel.bacnet.consumer.BACnetDataWriter
 
-  def writeImpl(data)
+  def oidsDiscoveredImpl(data)
     data.each { |item| 
-      puts item.oid.to_s + " " + item.value.to_s + " " + item.instanceNumber.to_s + " " + item.curTime.to_s
+      puts "Ruby BACnetDataWriter oid: " + item.oid.to_s + " " + item.value.to_s + " " + item.instanceNumber.to_s + " " + item.curTime.to_s
     }
+  end
+
+  def deviceDiscoveredImpl(device)
+    puts "Ruby BACnetDataWriter device: " + device
   end
 end
 
@@ -55,7 +59,7 @@ class SinatraApp < Sinatra::Base
     # schedule a single device scan. However, the device OID's are re-polled at the interval(s) specified in the filters 
     # bacnet.scheduleScan(1234, bacnet.getDefaultFilters(), [w].to_java(gov.nrel.consumer.BACnetDataWriter));
     $bacnet.scheduleScan(minId, maxId, $bacnet.getDefaultFilters, 
-			[$bacnetWriters[writer]].to_java(gov.nrel.consumer.BACnetDataWriter))
+			[$bacnetWriters[writer]].to_java(gov.nrel.bacnet.consumer.BACnetDataWriter))
 
     "New Scanner Scheduled: #{minId} #{maxId} #{writer}"
 

@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.serotonin.bacnet4j.RemoteDevice;
+
 import org.codehaus.jackson.map.ObjectMapper;
 
 
@@ -30,7 +32,12 @@ public class DatabusDataWriter extends BACnetDataWriter {
 		return sender;
 	}
 
-	protected void writeImpl(List<BACnetData> data) throws Exception
+	protected void deviceDiscoveredImpl(RemoteDevice devices) throws Exception
+	{
+		// nothing to do here, we don't care about storing devices in this code
+	}
+
+	protected void oidsDiscoveredImpl(List<BACnetData> data) throws Exception
 	{
 		List<DatabusBean> postdata = new ArrayList<DatabusBean>();
 		for(BACnetData d : data) {
