@@ -22,8 +22,8 @@
  */
 package gov.nrel.bacnet;
 
-import gov.nrel.consumer.beans.Config;
-import gov.nrel.consumer.BACnet;
+import gov.nrel.bacnet.Config;
+import gov.nrel.bacnet.consumer.BACnet;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -132,7 +132,7 @@ public class SlaveDevice extends java.util.TimerTask {
 		
 		try {
 			logger.log(Level.INFO, "Reading oid file " + m_config.getSlaveDeviceConfigFile());
-			String oidData = gov.nrel.consumer.BACnet.readFile(m_config.getSlaveDeviceConfigFile(),
+			String oidData = gov.nrel.bacnet.consumer.BACnet.readFile(m_config.getSlaveDeviceConfigFile(),
 					Charset.forName("US-ASCII"));
 
 			com.google.gson.Gson gson = new com.google.gson.Gson();
