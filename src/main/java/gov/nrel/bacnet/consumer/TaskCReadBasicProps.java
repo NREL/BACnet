@@ -6,6 +6,7 @@ import gov.nrel.bacnet.consumer.beans.Stream;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.logging.Level;
@@ -31,13 +32,13 @@ class TaskCReadBasicProps implements Runnable, Callable<Object> {
 	private LocalDevice m_localDevice;
 	private CountDownLatch latch;
 	private OurExecutor exec;
-	private List<BACnetDataWriter> writers;
+	private Collection<BACnetDataWriter> writers;
 
 	private PropertiesReader propReader;
 	private String id;
 	
 	public TaskCReadBasicProps(int counter, LocalDevice local, OurExecutor exec, List<TaskFPollDeviceTask> devices,
-			JsonAllFilters deviceConfig2, CountDownLatch latch, List<BACnetDataWriter> writers) {
+			JsonAllFilters deviceConfig2, CountDownLatch latch, Collection<BACnetDataWriter> writers) {
 		this.id = "task"+counter;
 		this.m_localDevice = local;
 		this.propReader = new PropertiesReader(local);

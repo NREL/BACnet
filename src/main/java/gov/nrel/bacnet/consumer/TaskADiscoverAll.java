@@ -9,6 +9,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.List;
+import java.util.Collection;
 
 import com.serotonin.bacnet4j.LocalDevice;
 
@@ -18,11 +19,11 @@ class TaskADiscoverAll implements Runnable, Callable<Object> {
 	private LocalDevice localDevice;
 	private Config config;
 	private JsonAllFilters deviceConfig;
-	private List<BACnetDataWriter> writers;
+	private Collection<BACnetDataWriter> writers;
 	private OurExecutor exec;
 	
 	public TaskADiscoverAll(LocalDevice localDevice, 
-			OurExecutor exec, Config config, JsonAllFilters filters, List<BACnetDataWriter> writers) {
+			OurExecutor exec, Config config, JsonAllFilters filters, Collection<BACnetDataWriter> writers) {
 		this.localDevice = localDevice;
 		this.exec = exec;
 		this.config = config;

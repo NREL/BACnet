@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
@@ -37,10 +38,10 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 	private int range;
 	private JsonAllFilters deviceConfig;
 	private Config config;
-	private List<BACnetDataWriter> bacnetDataWriters;
+	private Collection<BACnetDataWriter> bacnetDataWriters;
 	private OurExecutor exec;
 	
-	public TaskBDiscoverer(LocalDevice localDevice, OurExecutor exec, Config config, JsonAllFilters deviceConfig2, List<BACnetDataWriter> writers) {
+	public TaskBDiscoverer(LocalDevice localDevice, OurExecutor exec, Config config, JsonAllFilters deviceConfig2, Collection<BACnetDataWriter> writers) {
 		this.m_localDevice = localDevice;
 		this.deviceConfig = deviceConfig2;
 		this.config = config;

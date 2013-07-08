@@ -4,6 +4,7 @@ import gov.nrel.bacnet.consumer.beans.DatabusBean;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -16,11 +17,11 @@ public class TaskGRecordTask implements Runnable {
 	private static final Logger log = Logger.getLogger(TaskGRecordTask.class.getName());
 	
 	private List<BACnetData> data;
-	private List<BACnetDataWriter> writers;
+	private Collection<BACnetDataWriter> writers;
 
 	private static int counter = 0;
 	
-	public TaskGRecordTask(List<BACnetData> data, List<BACnetDataWriter> writers) {
+	public TaskGRecordTask(List<BACnetData> data, Collection<BACnetDataWriter> writers) {
 		this.writers = writers;
 		this.data = data;
 	}

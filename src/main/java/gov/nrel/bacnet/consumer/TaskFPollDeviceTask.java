@@ -51,11 +51,11 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object> {
 	private Map<ObjectIdentifier, Stream> streams = new HashMap<ObjectIdentifier, Stream>();
 	
 	private Random r = new Random(System.currentTimeMillis());
-	private List<BACnetDataWriter> writers;
+	private Collection<BACnetDataWriter> writers;
 	private OurExecutor exec;
 	private static int peakQueueSize = 0;
 	
-	public TaskFPollDeviceTask(RemoteDevice d, LocalDevice local, OurExecutor exec, List<BACnetDataWriter> writers) {
+	public TaskFPollDeviceTask(RemoteDevice d, LocalDevice local, OurExecutor exec, Collection<BACnetDataWriter> writers) {
 		this.rd = d;
 		this.m_localDevice = local;
 		this.exec = exec;

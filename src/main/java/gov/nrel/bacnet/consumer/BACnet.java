@@ -15,6 +15,7 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -51,6 +52,7 @@ public class BACnet {
 	private LocalDevice localDevice;
 	private JsonAllFilters filters;
 	private LogHandler logHandler;
+	private BACnetDatabase database;
 
         public BACnet(Config t_config)
 	{
@@ -81,6 +83,17 @@ public class BACnet {
 		} catch(Throwable e) {
 			logger.log(Level.WARNING, "exception starting", e);
 		}
+	}
+
+	public void setDatabase(BACnetDatabase d)
+	{
+		logger.info("Setting new database");
+		database = d;
+	}
+
+	public BACnetDatabase getDatabase()
+	{
+		return database;
 	}
 
 	public void setLogger(LogHandler h)
@@ -127,6 +140,19 @@ public class BACnet {
 	  return scheduleScan(id, id, filters, writers, intervalInHours);
 	}
 
+	private Collection<BACnetDataWriter> getWriters(BACnetDataWriter[] writers)
+	{
+		java.util.List<BACnetDataWriter> writerlist = Arrays.asList(writers);
+
+		if (database != null)
+		{
+			writerlist.add(database);
+		}
+
+		return writerlist;
+	}
+
+
 	public ScheduledFuture<?> scheduleScan(int minId, int maxId, JsonAllFilters filters, BACnetDataWriter[] writers, int intervalInHours)
 	{
 		Config newconfig =
@@ -138,8 +164,8 @@ public class BACnet {
 				config.getDatabusUrl(), config.getDatabusPort(), config.getSlaveDeviceEnabled(), config.getSlaveDeviceConfigFile(), 
 				config.getSlaveDeviceUpdateInterval(), minId, maxId
 			);
-		
-		TaskADiscoverAll all = new TaskADiscoverAll(localDevice, exec, newconfig, filters, Arrays.asList(writers));
+	
+		TaskADiscoverAll all = new TaskADiscoverAll(localDevice, exec, newconfig, filters, getWriters(writers));
 		return svc.scheduleAtFixedRate(all, 0, newconfig.getScanInterval(), TimeUnit.HOURS);
 	}
 
@@ -155,7 +181,7 @@ public class BACnet {
 				config.getSlaveDeviceUpdateInterval(), minId, maxId
 			);
 		
-		TaskADiscoverAll all = new TaskADiscoverAll(localDevice, exec, newconfig, filters, Arrays.asList(writers));
+		TaskADiscoverAll all = new TaskADiscoverAll(localDevice, exec, newconfig, filters, getWriters(writers));
 		return svc.schedule((Callable<Object>)all, 0, TimeUnit.HOURS);
 	}
 

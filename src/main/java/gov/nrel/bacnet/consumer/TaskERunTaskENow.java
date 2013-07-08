@@ -4,6 +4,7 @@ import gov.nrel.bacnet.consumer.beans.Counter;
 import gov.nrel.bacnet.consumer.beans.Delay;
 
 import java.util.List;
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;

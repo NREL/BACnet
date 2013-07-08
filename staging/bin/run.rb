@@ -23,6 +23,42 @@ class Writer < gov.nrel.bacnet.consumer.BACnetDataWriter
 
 end
 
+
+class Database < gov.nrel.bacnet.consumer.BACnetDatabase
+
+  def initialize
+    @oids = {{}}
+    @devices = {}
+  end
+
+
+  def getDeviceImpl(deviceId)
+    return @devices[deviceId]
+  end
+
+  def getDevicesImpl()
+    return @devices.to_java(com.serotonin.bacnet4j.RemoteDevice)
+  end
+
+  def getOIDsImpl(deviceId)
+    return @oids[deviceId].values.to_java(com.serotonin.bacnet4j.RemoteDevice)
+  end
+
+  def getOIDsImpl(deviceId, oid)
+    return @oids[deviceId][oid]
+  end
+
+  def oidsDiscoveredImpl(data)
+    data.each { |item| 
+      @oids[item.instanceNumber][item.oid] = item;
+    }
+  end
+
+  def deviceDiscoveredImpl(device)
+    @devices[device.instanceNumber] = device;
+  end
+end
+
 class Logger < gov.nrel.bacnet.consumer.LogHandler
   def initialize
     @records = []
@@ -49,6 +85,8 @@ begin
   $bacnetWriters["stdout"] = Writer.new
 
   $bacnet.setLogger(Logger.new)
+  $bacnet.setDatabase(Database.new)
+
    
 
 rescue java.lang.Throwable => e
