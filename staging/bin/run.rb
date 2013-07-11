@@ -18,16 +18,25 @@ class Writer < gov.nrel.bacnet.consumer.BACnetDataWriter
   end
 
   def deviceDiscoveredImpl(device)
-    puts "Ruby BACnetDataWriter device: " + device
+    puts "Ruby BACnetDataWriter device: " + device.to_s
   end
 
+  def writeImpl(device, data)
+    deviceDiscoveredImpl(device)
+    oidsDiscoveredImpl(data)
+  end
+
+  def writeWithParamImpl(device, data, param)
+    # we have no use for a parameter
+    writeImpl(device,data)
+  end
 end
 
 
 class Database < gov.nrel.bacnet.consumer.BACnetDatabase
 
   def initialize
-    @oids = {{}}
+    @oids = {}
     @devices = {}
   end
 
@@ -41,21 +50,27 @@ class Database < gov.nrel.bacnet.consumer.BACnetDatabase
   end
 
   def getOIDsImpl(deviceId)
-    return @oids[deviceId].values.to_java(com.serotonin.bacnet4j.RemoteDevice)
+    return @oids[deviceId].values.to_java(gov.nrel.bacnet.consumer.BACnetData)
   end
 
-  def getOIDsImpl(deviceId, oid)
+  def getOIDImpl(deviceId, oid)
     return @oids[deviceId][oid]
   end
 
   def oidsDiscoveredImpl(data)
     data.each { |item| 
+      if (@oids[item.instanceNumber].nil?)
+	@oids[item.instanceNumber] = {}
+      end
+
       @oids[item.instanceNumber][item.oid] = item;
+      puts "oid discovered: #{item.oid}"
     }
   end
 
   def deviceDiscoveredImpl(device)
     @devices[device.instanceNumber] = device;
+    puts "device discovered: #{device}"
   end
 end
 
@@ -114,7 +129,31 @@ class SinatraApp < Sinatra::Base
     }
 
     return body;
+  end
 
+  get '/send/:id/:writer' do
+    db = $bacnet.getDatabase
+    id = params[:id].to_i
+    writer = params[:writer]
+
+    writerObj = $bacnetWriters[writer]
+
+    deviceObj = db.getDevice(id)
+    oids = db.getOIDs(id)
+    writerObj.write(deviceObj, oids)
+  end
+
+  get '/send/:id/:writer/:param' do
+    db = $bacnet.getDatabase
+    id = params[:id].to_i
+    param = params[:param]
+    writer = params[:writer]
+
+    writerObj = $bacnetWriters[writer]
+
+    deviceObj = db.getDevice(id)
+    oids = db.getOIDs(id)
+    writerObj.writeWithParam(deviceObj, oids, param)
   end
 
   post '/scan/:minId/:maxId/:writer' do

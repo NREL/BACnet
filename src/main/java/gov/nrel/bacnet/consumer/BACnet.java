@@ -142,7 +142,7 @@ public class BACnet {
 
 	private Collection<BACnetDataWriter> getWriters(BACnetDataWriter[] writers)
 	{
-		java.util.List<BACnetDataWriter> writerlist = Arrays.asList(writers);
+		java.util.List<BACnetDataWriter> writerlist = new java.util.ArrayList(Arrays.asList(writers));
 
 		if (database != null)
 		{

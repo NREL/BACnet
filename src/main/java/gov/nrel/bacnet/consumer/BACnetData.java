@@ -1,6 +1,6 @@
 package gov.nrel.bacnet.consumer;
 
-class BACnetData
+public class BACnetData
 {
   public BACnetData(com.serotonin.bacnet4j.type.primitive.ObjectIdentifier oid, com.serotonin.bacnet4j.type.Encodable value, int instanceNumber,
       long curTime)

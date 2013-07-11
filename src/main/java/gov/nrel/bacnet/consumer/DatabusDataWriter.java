@@ -32,9 +32,22 @@ public class DatabusDataWriter extends BACnetDataWriter {
 		return sender;
 	}
 
-	protected void deviceDiscoveredImpl(RemoteDevice devices) throws Exception
+	protected void deviceDiscoveredImpl(RemoteDevice device) throws Exception
 	{
 		// nothing to do here, we don't care about storing devices in this code
+	}
+
+	protected void writeImpl(RemoteDevice device, List<BACnetData> data) throws Exception
+	{
+		deviceDiscoveredImpl(device);
+		oidsDiscoveredImpl(data);
+	}
+
+	protected void writeWithParamImpl(RemoteDevice device, List<BACnetData> data, String param) throws Exception
+	{
+		// we don't accept a param
+		deviceDiscoveredImpl(device);
+		oidsDiscoveredImpl(data);
 	}
 
 	protected void oidsDiscoveredImpl(List<BACnetData> data) throws Exception
