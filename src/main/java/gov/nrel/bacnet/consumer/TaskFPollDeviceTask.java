@@ -37,7 +37,7 @@ import com.serotonin.bacnet4j.type.primitive.ObjectIdentifier;
 import com.serotonin.bacnet4j.util.PropertyReferences;
 import com.serotonin.bacnet4j.util.PropertyValues;
 
-class TaskFPollDeviceTask implements Runnable, Callable<Object> {
+class TaskFPollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
 
 	private static final Logger log = Logger.getLogger(TaskFPollDeviceTask.class.getName());
 	private RemoteDevice rd;
@@ -54,6 +54,7 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object> {
 	private Collection<BACnetDataWriter> writers;
 	private OurExecutor exec;
 	private static int peakQueueSize = 0;
+	private int trackableTaskId;
 	
 	public TaskFPollDeviceTask(RemoteDevice d, LocalDevice local, OurExecutor exec, Collection<BACnetDataWriter> writers) {
 		this.rd = d;
@@ -61,6 +62,27 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object> {
 		this.exec = exec;
 		this.writers = writers;
 	}
+
+	public void cancelTask()
+	{
+		future.cancel(true);
+	}
+
+	public String getDescription()
+	{
+		return "PollDeviceTask: " + rd + " numTimesRun " + numTimesRun;
+	}
+
+	public int getId()
+	{
+		return trackableTaskId;
+	}
+
+	public void setId(int id)
+	{
+		trackableTaskId = id;
+	}
+
 
 	@Override
 	public void run() {
