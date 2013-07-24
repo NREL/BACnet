@@ -53,10 +53,12 @@ public class BACnet {
 	private JsonAllFilters filters;
 	private LogHandler logHandler;
 	private BACnetDatabase database;
+	private TaskTracker tracker;
 
         public BACnet(Config t_config)
 	{
 		config = t_config;
+		tracker = new TaskTracker();
 		localDevice = null;
 		filters = null;
 		logHandler = null;
@@ -94,6 +96,11 @@ public class BACnet {
 	public BACnetDatabase getDatabase()
 	{
 		return database;
+	}
+
+	public TaskTracker getTaskTracker()
+	{
+		return tracker;
 	}
 
 	public void setLogger(LogHandler h)
@@ -165,8 +172,11 @@ public class BACnet {
 				config.getSlaveDeviceUpdateInterval(), minId, maxId
 			);
 	
-		TaskADiscoverAll all = new TaskADiscoverAll(localDevice, exec, newconfig, filters, getWriters(writers));
-		return svc.scheduleAtFixedRate(all, 0, newconfig.getScanInterval(), TimeUnit.HOURS);
+		TaskADiscoverAll all = new TaskADiscoverAll(localDevice, exec, newconfig, filters, getWriters(writers), tracker);
+		ScheduledFuture<?> future = svc.scheduleAtFixedRate(all, 0, newconfig.getScanInterval(), TimeUnit.HOURS);
+		all.setFuture(future);
+		tracker.add(all);
+		return future;
 	}
 
 	public ScheduledFuture<?> scheduleScan(int minId, int maxId, JsonAllFilters filters, BACnetDataWriter[] writers)
@@ -181,8 +191,11 @@ public class BACnet {
 				config.getSlaveDeviceUpdateInterval(), minId, maxId
 			);
 		
-		TaskADiscoverAll all = new TaskADiscoverAll(localDevice, exec, newconfig, filters, getWriters(writers));
-		return svc.schedule((Callable<Object>)all, 0, TimeUnit.HOURS);
+		TaskADiscoverAll all = new TaskADiscoverAll(localDevice, exec, newconfig, filters, getWriters(writers), tracker);
+		ScheduledFuture<?> future = svc.schedule((Callable<Object>)all, 0, TimeUnit.HOURS);
+		all.setFuture(future);
+		tracker.add(all);
+		return future;
 	}
 
 	public ScheduledFuture<?> scheduleScan(int id, JsonAllFilters filters, BACnetDataWriter[] writers)

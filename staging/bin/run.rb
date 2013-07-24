@@ -117,6 +117,36 @@ class SinatraApp < Sinatra::Base
     "BACnet Scanner Service"
   end
 
+  get '/tasks/list' do
+    tasks = $bacnet.getTaskTracker.getTasks
+
+    body = ""
+
+    tasks.each { |task|
+      body += "ID: #{task.getId()} description: #{task.getDescription()}<br/>"
+    }
+
+    return body;
+  end
+
+  get '/tasks/cancel/:id' do
+    tasks = $bacnet.getTaskTracker.getTasks
+    id = params[:id].to_i
+
+    body = ""
+
+    tasks.each { |task|
+      if (task.getId() == id)
+	body += "#{task.getDescription()} canceled<br/>"
+	task.cancelTask
+      end
+    }
+
+    return body;
+  end
+
+
+
   get '/logmessages' do
     messages = $bacnet.getLogger.getRecords
 
@@ -142,6 +172,7 @@ class SinatraApp < Sinatra::Base
     oids = db.getOIDs(id)
     writerObj.write(deviceObj, oids)
   end
+
 
   get '/send/:id/:writer/:param' do
     db = $bacnet.getDatabase

@@ -40,8 +40,10 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 	private Config config;
 	private Collection<BACnetDataWriter> bacnetDataWriters;
 	private OurExecutor exec;
+	private TaskTracker tracker;
 	
-	public TaskBDiscoverer(LocalDevice localDevice, OurExecutor exec, Config config, JsonAllFilters deviceConfig2, Collection<BACnetDataWriter> writers) {
+	public TaskBDiscoverer(LocalDevice localDevice, OurExecutor exec, Config config, JsonAllFilters deviceConfig2, Collection<BACnetDataWriter> writers,
+	    TaskTracker tracker) {
 		this.m_localDevice = localDevice;
 		this.deviceConfig = deviceConfig2;
 		this.config = config;
@@ -50,6 +52,7 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 		this.exec = exec;
 		this.counter = config.getMinId();
 		this.maxCounter = config.getMaxId();
+		this.tracker = tracker;
 		
 		newDeviceListener = new NewDeviceHandler();
 		m_localDevice.getEventHandler().addListener(newDeviceListener);
@@ -127,7 +130,7 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 //		svc.schedule(new TaskCRerun(m_localDevice, failures, null, deviceConfig, fileName, latch), 0, TimeUnit.SECONDS);
 //		
 		//schedule a task that will wait on all good runs+ 1 failures run...
-		Runnable task = new TaskERunTaskENow(exec, devices, latch);
+		Runnable task = new TaskERunTaskENow(exec, devices, latch, tracker);
 		svc.schedule(task, 10, TimeUnit.SECONDS);
 	}
 	
@@ -228,6 +231,11 @@ class TaskBDiscoverer implements Runnable, Callable<Object> {
 	public void setFuture(ScheduledFuture<?> future) {
 		log.info("set future="+future);
 		this.future = future;
+	}
+
+	public ScheduledFuture<?> getFuture()
+	{
+		return this.future;
 	}
 
 }
