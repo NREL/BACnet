@@ -19,11 +19,13 @@ class TaskERunTaskENow implements Runnable, Callable<Object> {
 	private CountDownLatch latch;
 	private List<TaskFPollDeviceTask> devices;
 	private OurExecutor exec;
+	private TaskTracker tracker;
 	
-	public TaskERunTaskENow(OurExecutor exec, List<TaskFPollDeviceTask> devices, CountDownLatch latch) {
+	public TaskERunTaskENow(OurExecutor exec, List<TaskFPollDeviceTask> devices, CountDownLatch latch, TaskTracker tracker) {
 		this.exec = exec;
 		this.devices = devices;
 		this.latch = latch;
+		this.tracker = tracker;
 	}
 	@Override
 	public void run() {
@@ -84,6 +86,7 @@ class TaskERunTaskENow implements Runnable, Callable<Object> {
 			//ScheduledFuture<?> future = svc.schedule(task, 0, TimeUnit.SECONDS);
 			ScheduledFuture<?> future = svc.scheduleWithFixedDelay(task, delay.getDelay(), delay.getInterval(), TimeUnit.SECONDS);
 			st.setFuture(future);
+			tracker.add(st);
 		}
 	}
 
