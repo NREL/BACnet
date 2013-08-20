@@ -13,3 +13,12 @@
 [submodule "vagrant/chef/cookbooks/vim"]
 	path = vagrant/chef/cookbooks/vim
 	url = git@github.com:opscode-cookbooks/vim.git
+[submodule "vagrant/chef/cookbooks/build-essential"]
+	path = vagrant/chef/cookbooks/build-essential
+	url = git@github.com:opscode-cookbooks/build-essential.git
+[submodule "vagrant/chef/cookbooks/ruby_build"]
+	path = vagrant/chef/cookbooks/ruby_build
+	url = git@github.com:NREL-cookbooks/chef-ruby_build.git
+[submodule "vagrant/chef/cookbooks/rbenv"]
+	path = vagrant/chef/cookbooks/rbenv
+	url = git@github.com:NREL-cookbooks/rbenv.git
