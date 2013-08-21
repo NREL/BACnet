@@ -26,9 +26,10 @@ class Writer < gov.nrel.bacnet.consumer.BACnetDataWriter
     oidsDiscoveredImpl(data)
   end
 
-  def writeWithParamImpl(device, data, param)
+  def writeWithParamsImpl(device, data, params)
     # we have no use for a parameter
     writeImpl(device,data)
+    puts "writeWithParams: " + params.to_s
   end
 end
 
@@ -92,16 +93,21 @@ end
 begin
   $config = gov.nrel.bacnet.consumer.BACnet.parseOptions(ARGV)
   $bacnet = gov.nrel.bacnet.consumer.BACnet.new($config)
-  $bacnet.initializeDefaultScanner
 
 
   $bacnetWriters = {}
-  $bacnetWriters["databus"] = $bacnet.getDatabusDataWriter
+
+  databusDataWriter = $bacnet.getDatabusDataWriter
+  if databusDataWriter != nil
+    puts "databusDataWriter: " + databusDataWriter.to_s
+    $bacnetWriters["databus"] = databusDataWriter
+  end
   $bacnetWriters["stdout"] = Writer.new
 
   $bacnet.setLogger(Logger.new)
   $bacnet.setDatabase(Database.new)
 
+  $bacnet.initializeDefaultScanner
    
 
 rescue java.lang.Throwable => e
@@ -129,7 +135,7 @@ class SinatraApp < Sinatra::Base
     return body;
   end
 
-  get '/tasks/cancel/:id' do
+  put '/tasks/cancel/:id' do
     tasks = $bacnet.getTaskTracker.getTasks
     id = params[:id].to_i
 
@@ -161,7 +167,7 @@ class SinatraApp < Sinatra::Base
     return body;
   end
 
-  get '/send/:id/:writer' do
+  put '/send/:id/:writer' do
     db = $bacnet.getDatabase
     id = params[:id].to_i
     writer = params[:writer]
@@ -170,24 +176,12 @@ class SinatraApp < Sinatra::Base
 
     deviceObj = db.getDevice(id)
     oids = db.getOIDs(id)
-    writerObj.write(deviceObj, oids)
+
+    puts "Args: " + params.to_s
+    writerObj.writeWithParams(deviceObj, oids, java.util.HashMap.new(params))
   end
 
-
-  get '/send/:id/:writer/:param' do
-    db = $bacnet.getDatabase
-    id = params[:id].to_i
-    param = params[:param]
-    writer = params[:writer]
-
-    writerObj = $bacnetWriters[writer]
-
-    deviceObj = db.getDevice(id)
-    oids = db.getOIDs(id)
-    writerObj.writeWithParam(deviceObj, oids, param)
-  end
-
-  post '/scan/:minId/:maxId/:writer' do
+  put '/scan/:minId/:maxId/:writer' do
     minId = params[:minId].to_i
     maxId = params[:maxId].to_i
     writer = params[:writer]

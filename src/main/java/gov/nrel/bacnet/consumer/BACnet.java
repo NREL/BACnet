@@ -136,8 +136,15 @@ public class BACnet {
 
 	public void initializeDefaultScanner()
 	{
-		BACnetDataWriter[] writers = new BACnetDataWriter[1];
-		writers[0] = getDatabusDataWriter();
+		BACnetDataWriter[] writers;
+	        if (getDatabusDataWriter() != null) 
+		{
+		  writers = new BACnetDataWriter[1];
+		  writers[0] = getDatabusDataWriter();
+		} else {
+		  writers = new BACnetDataWriter[0];
+		}
+
 		backgroundDiscoverer = scheduleScan(config.getMinId(), config.getMaxId(), getDefaultFilters(), writers, 
 			config.getScanInterval());
 	}
