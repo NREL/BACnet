@@ -24,9 +24,9 @@ public abstract class BACnetDataWriter {
 		writeImpl(device, oids);
 	}
 
-	public synchronized void writeWithParam(RemoteDevice device, List<BACnetData> oids, String param) throws Exception
+	public synchronized void writeWithParams(RemoteDevice device, List<BACnetData> oids, java.util.HashMap params) throws Exception
 	{
-		writeWithParamImpl(device, oids, param);
+		writeWithParamsImpl(device, oids, params);
 	}
 
 	public synchronized void write(RemoteDevice device, BACnetData []oids) throws Exception
@@ -34,9 +34,9 @@ public abstract class BACnetDataWriter {
 		writeImpl(device, Arrays.asList(oids));
 	}
 
-	public synchronized void writeWithParam(RemoteDevice device, BACnetData []oids, String param) throws Exception
+	public synchronized void writeWithParams(RemoteDevice device, BACnetData []oids, java.util.HashMap params) throws Exception
 	{
-		writeWithParamImpl(device, Arrays.asList(oids), param);
+		writeWithParamsImpl(device, Arrays.asList(oids), params);
 	}
 
 	protected abstract void deviceDiscoveredImpl(RemoteDevice data) throws Exception;
@@ -45,5 +45,5 @@ public abstract class BACnetDataWriter {
 
 	protected abstract void writeImpl(RemoteDevice device, List<BACnetData> oids) throws Exception;
 
-	protected abstract void writeWithParamImpl(RemoteDevice device, List<BACnetData> oids, String param) throws Exception;
+	protected abstract void writeWithParamsImpl(RemoteDevice device, List<BACnetData> oids, java.util.HashMap params) throws Exception;
 }

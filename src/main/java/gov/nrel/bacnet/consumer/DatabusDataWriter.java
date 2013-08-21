@@ -43,7 +43,7 @@ public class DatabusDataWriter extends BACnetDataWriter {
 		oidsDiscoveredImpl(data);
 	}
 
-	protected void writeWithParamImpl(RemoteDevice device, List<BACnetData> data, String param) throws Exception
+	protected void writeWithParamsImpl(RemoteDevice device, List<BACnetData> data, java.util.HashMap params) throws Exception
 	{
 		// we don't accept a param
 		deviceDiscoveredImpl(device);
