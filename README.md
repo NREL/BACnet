@@ -19,7 +19,7 @@ Compiling
 ````sh
 git clone https://github.com/NREL/BACnet.git
 cd BACnet
-gradle
+gradle build
 ````
 
 This will compile the BACnet Scraper and prepare some example files for execution. 
@@ -27,12 +27,34 @@ This will compile the BACnet Scraper and prepare some example files for executio
 Execution
 ---------
 
-A jruby script, run.rb, is staged for executation (note this file is overwritten each time you compile). The script gives examples for logging, data storage and retrieval, and use of Sinatra to provide a web interface to the BACnet process.
+A jruby script, run.rb, is staged for execution (note this file is overwritten each time you compile). The script gives examples for logging, data storage and retrieval, and use of Sinatra to provide a web interface to the BACnet process.
 
+To run the application as a scraper do the following:
 
-````sh
+```sh
 cd build/bacnet/bin
-jruby run.rb --help
+bundle exec jruby run.rb -dev en0 -s -i 65010 -vv -f ../conf/filter.json
+```
+
+To run the application as a slave device do the following:
+
+```sh
+cd build/bacnet/bin
+bundle exec jruby run.rb -dev en0 -S -vv -F ../conf/example_oid.json -i 65010
+```
+
+To run both the application as a scraper and a slave device do the following:
+```
+```sh
+cd build/bacnet/bin
+bundle exec jruby run.rb -dev en0 -s -i 65010 -vv -f ../conf/filter.json -S -F ../conf/example_oid.json
+```
+
+For more options use --help
+
+```sh
+cd build/bacnet/bin
+bundle exec jruby run.rb --help
 
 
 usage: Syntax: [-D <arg>] [-d <arg>] [-databus <arg>] [-f <arg>] [-F                              
@@ -83,7 +105,9 @@ usage: Syntax: [-D <arg>] [-d <arg>] [-databus <arg>] [-f <arg>] [-F
  -vv,--very-verbose                   Very verbose logging (All Levels).
                                       Default is warning and error
                                       logging. default: false
-````
+```
+
+
 
 Slave Device
 ------------

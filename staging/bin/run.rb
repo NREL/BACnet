@@ -1,18 +1,18 @@
-require 'java'
-Dir["../lib/\*.jar"].each { |jar| require jar }
-
+require 'rubygems'
+require 'bundler/setup'
 
 require 'sinatra/base'
+require 'java'
+Dir["../lib/\*.jar"].each { |jar| require jar }
 
 def gov
   Java::Gov
 end
 
-
 class Writer < gov.nrel.bacnet.consumer.BACnetDataWriter
 
   def oidsDiscoveredImpl(data)
-    data.each { |item| 
+    data.each { |item|
       puts "Ruby BACnetDataWriter oid: " + item.oid.to_s + " " + item.value.to_s + " " + item.instanceNumber.to_s + " " + item.curTime.to_s
     }
   end
@@ -28,7 +28,7 @@ class Writer < gov.nrel.bacnet.consumer.BACnetDataWriter
 
   def writeWithParamsImpl(device, data, params)
     # we have no use for a parameter
-    writeImpl(device,data)
+    writeImpl(device, data)
     puts "writeWithParams: " + params.to_s
   end
 end
@@ -59,9 +59,9 @@ class Database < gov.nrel.bacnet.consumer.BACnetDatabase
   end
 
   def oidsDiscoveredImpl(data)
-    data.each { |item| 
+    data.each { |item|
       if (@oids[item.instanceNumber].nil?)
-	@oids[item.instanceNumber] = {}
+        @oids[item.instanceNumber] = {}
       end
 
       @oids[item.instanceNumber][item.oid] = item;
@@ -91,12 +91,14 @@ end
 
 
 begin
+  puts "Arguments are #{ARGV}"
   $config = gov.nrel.bacnet.consumer.BACnet.parseOptions(ARGV)
   $bacnet = gov.nrel.bacnet.consumer.BACnet.new($config)
 
-
+  # Add in the BACnet writers
   $bacnetWriters = {}
 
+  # By default add in the Databus Writer which is currently contained within Java
   databusDataWriter = $bacnet.getDatabusDataWriter
   if databusDataWriter != nil
     puts "databusDataWriter: " + databusDataWriter.to_s
@@ -108,7 +110,7 @@ begin
   $bacnet.setDatabase(Database.new)
 
   $bacnet.initializeDefaultScanner
-   
+
 
 rescue java.lang.Throwable => e
   puts "Error in starting up: #{e.message}"
@@ -120,7 +122,7 @@ class SinatraApp < Sinatra::Base
 
 
   get '/' do
-    "BACnet Scanner Service"
+    "BACnet Client Application Web Interface"
   end
 
   get '/tasks/list' do
@@ -143,14 +145,13 @@ class SinatraApp < Sinatra::Base
 
     tasks.each { |task|
       if (task.getId() == id)
-	body += "#{task.getDescription()} canceled<br/>"
-	task.cancelTask
+        body += "#{task.getDescription()} canceled<br/>"
+        task.cancelTask
       end
     }
 
     return body;
   end
-
 
 
   get '/logmessages' do
@@ -160,7 +161,7 @@ class SinatraApp < Sinatra::Base
 
     body = ""
 
-    messages.each { |message| 
+    messages.each { |message|
       body += formatter.format(message) + "<br/>"
     }
 
@@ -188,8 +189,8 @@ class SinatraApp < Sinatra::Base
 
     # schedule a single device scan. However, the device OID's are re-polled at the interval(s) specified in the filters 
     # bacnet.scheduleScan(1234, bacnet.getDefaultFilters(), [w].to_java(gov.nrel.consumer.BACnetDataWriter));
-    $bacnet.scheduleScan(minId, maxId, $bacnet.getDefaultFilters, 
-			[$bacnetWriters[writer]].to_java(gov.nrel.bacnet.consumer.BACnetDataWriter))
+    $bacnet.scheduleScan(minId, maxId, $bacnet.getDefaultFilters,
+                         [$bacnetWriters[writer]].to_java(gov.nrel.bacnet.consumer.BACnetDataWriter))
 
     "New Scanner Scheduled: #{minId} #{maxId} #{writer}"
 
