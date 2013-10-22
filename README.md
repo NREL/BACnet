@@ -16,11 +16,11 @@ Compiling
 
 [gradle](http://www.gradle.org/) is used for building the project. To build:
 
-````sh
+```sh
 git clone https://github.com/NREL/BACnet.git
 cd BACnet
 gradle build
-````
+```
 
 This will compile the BACnet Scraper and prepare some example files for execution. 
 
@@ -44,7 +44,7 @@ bundle exec jruby run.rb -dev en0 -S -vv -F ../conf/example_oid.json -i 65010
 ```
 
 To run both the application as a scraper and a slave device do the following:
-```
+
 ```sh
 cd build/bacnet/bin
 bundle exec jruby run.rb -dev en0 -s -i 65010 -vv -f ../conf/filter.json -S -F ../conf/example_oid.json
@@ -106,8 +106,6 @@ usage: Syntax: [-D <arg>] [-d <arg>] [-databus <arg>] [-f <arg>] [-F
                                       Default is warning and error
                                       logging. default: false
 ```
-
-
 
 Slave Device
 ------------
