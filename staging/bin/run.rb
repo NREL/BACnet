@@ -35,12 +35,10 @@ end
 
 
 class Database < gov.nrel.bacnet.consumer.BACnetDatabase
-
   def initialize
     @oids = {}
     @devices = {}
   end
-
 
   def getDeviceImpl(deviceId)
     return @devices[deviceId]
@@ -65,7 +63,7 @@ class Database < gov.nrel.bacnet.consumer.BACnetDatabase
       end
 
       @oids[item.instanceNumber][item.oid] = item;
-      puts "oid discovered: #{item.oid}"
+      puts "oid discovered: #{item.oid} #{item.value}"
     }
   end
 
@@ -95,10 +93,8 @@ begin
   $config = gov.nrel.bacnet.consumer.BACnet.parseOptions(ARGV)
   $bacnet = gov.nrel.bacnet.consumer.BACnet.new($config)
 
-  # Add in the BACnet writers
   $bacnetWriters = {}
 
-  # By default add in the Databus Writer which is currently contained within Java
   databusDataWriter = $bacnet.getDatabusDataWriter
   if databusDataWriter != nil
     puts "databusDataWriter: " + databusDataWriter.to_s
@@ -111,7 +107,6 @@ begin
 
   $bacnet.initializeDefaultScanner
 
-
 rescue java.lang.Throwable => e
   puts "Error in starting up: #{e.message}"
   exit!
@@ -119,10 +114,8 @@ end
 
 
 class SinatraApp < Sinatra::Base
-
-
   get '/' do
-    "BACnet Client Application Web Interface"
+    "BACnet Scanner Service"
   end
 
   get '/tasks/list' do
@@ -182,9 +175,9 @@ class SinatraApp < Sinatra::Base
     writerObj.writeWithParams(deviceObj, oids, java.util.HashMap.new(params))
   end
 
-  put '/scan/:minId/:maxId/:writer' do
-    minId = params[:minId].to_i
-    maxId = params[:maxId].to_i
+  put '/scan/:min_id/:max_id/:writer' do
+    minId = params[:min_id].to_i
+    maxId = params[:max_id].to_i
     writer = params[:writer]
 
     # schedule a single device scan. However, the device OID's are re-polled at the interval(s) specified in the filters 
@@ -193,7 +186,6 @@ class SinatraApp < Sinatra::Base
                          [$bacnetWriters[writer]].to_java(gov.nrel.bacnet.consumer.BACnetDataWriter))
 
     "New Scanner Scheduled: #{minId} #{maxId} #{writer}"
-
   end
 end
 
