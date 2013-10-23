@@ -3,7 +3,7 @@ import java.util.regex.Pattern;
 
 import com.serotonin.bacnet4j.type.primitive.ObjectIdentifier;
 
-public class OIDFilter {
+class OIDFilter {
     String objectType;
     String instanceNumber;
     public int timeBetweenScans;

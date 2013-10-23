@@ -7,7 +7,7 @@ import javax.xml.bind.annotation.XmlElement;
 
 import org.codehaus.jackson.annotate.JsonProperty;
 
-public class RegisterResponseMessage {
+class RegisterResponseMessage {
 
 	@JsonProperty("modelName")
 	@XmlElement(name="modelName")

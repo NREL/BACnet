@@ -1,5 +1,5 @@
-[{
-	"instanceNumber": ".*",
+{
+	"instanceNumber": "1",
 	"networkNumber": ".*",
 	"macAddress": ".*",
 	"networkAddress": ".*",
@@ -9,4 +9,4 @@
 		"instanceNumber": "1.*",
 		"timeBetweenScans": 2000
 	}]
-}]
+}

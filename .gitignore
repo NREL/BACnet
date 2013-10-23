@@ -1,3 +1,10 @@
-bin/
+/bin/
+build/
+.settings/
+.project
+.vagrant
+.idea
 .gradle/
-output/
+.DS_Store
+.ruby-version
+.classpath

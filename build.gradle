@@ -2,10 +2,10 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 
 //override the default directory of build as I like to use build and build.bat for building
-buildDir = file('output')
+buildDir = file('build')
 project.ext.fixedLibDir = file('lib')
 project.ext.stagingDir = file('staging')
-project.ext.toStagingDir = file(new File(buildDir, project.name))
+project.ext.toStagingDir = file(new File(buildDir, 'bacnet'))
 project.ext.toStagingLibsDir = file(new File(toStagingDir, 'lib'))
 
 repositories {
