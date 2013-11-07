@@ -356,11 +356,10 @@ public class BACnet {
 		String databusStreamTable = "bacnetstreamMeta";
 		String databusDeviceTable = "bacnetdeviceMeta";
 
-		String databusUserName = "robot-bacnet";
-		String databusKey = "941RCGC.B2.1WWXM5WZVA5YL";
-		
-		String databusURL = "databus.nrel.gov";
-		int databusPort = 5502;
+		String databusUserName = "";
+		String databusKey = "";
+		String databusURL = "";
+		int databusPort = 1;
 
 
 		String devname = "eth0";
