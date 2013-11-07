@@ -33,7 +33,7 @@ To run the application as a scraper do the following:
 
 ```sh
 cd build/bacnet/bin
-bundle exec jruby run.rb -dev en0 -s -i 65010 -vv -f ../conf/filter.json
+bundle exec jruby run.rb -dev en0 -s -i 65010 -vv -f ../conf/example_filter.json
 ```
 
 To run the application as a slave device do the following:
@@ -47,7 +47,7 @@ To run both the application as a scraper and a slave device do the following:
 
 ```sh
 cd build/bacnet/bin
-bundle exec jruby run.rb -dev en0 -s -i 65010 -vv -f ../conf/filter.json -S -F ../conf/example_oid.json
+bundle exec jruby run.rb -dev en0 -s -i 65010 -vv -f ../conf/example_filter.json -S -F ../conf/example_oid.json
 ```
 
 For more options use --help
@@ -69,7 +69,7 @@ usage: Syntax: [-D <arg>] [-d <arg>] [-databus <arg>] [-f <arg>] [-F
                                       true                                                        
  -f,--filter-file <arg>               JSON filter file to use during                              
                                       scanning, default:                                          
-                                      ../conf/filter.json
+                                      ../conf/example_filter.json
  -F,--oid-file <arg>                  JSON oid file to use for the slave
                                       device configuration, default:
                                       ../conf/example_oid.json

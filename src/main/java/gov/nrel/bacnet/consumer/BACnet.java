@@ -356,17 +356,16 @@ public class BACnet {
 		String databusStreamTable = "bacnetstreamMeta";
 		String databusDeviceTable = "bacnetdeviceMeta";
 
-		String databusUserName = "robot-bacnet";
-		String databusKey = "941RCGC.B2.1WWXM5WZVA5YL";
-		
-		String databusURL = "databus.nrel.gov";
-		int databusPort = 5502;
+		String databusUserName = "";
+		String databusKey = "";
+		String databusURL = "";
+		int databusPort = 1;
 
 
 		String devname = "eth0";
 
 
-		String filterFile = "../conf/filter.json";
+		String filterFile = "../conf/example_filter.json";
 		String slaveDeviceConfigFile = "../conf/example_oid.json";
 
 		int slaveDeviceUpdateInterval = 10;
@@ -588,8 +587,7 @@ public class BACnet {
 			}
 
 			if (line.hasOption("u")) {
-				databusURL = line.getOptionValue("u",
-						"databus.nrel.gov");
+				databusURL = line.getOptionValue("u");
 			}
 
 			if (line.hasOption("k")) {
