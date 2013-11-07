@@ -587,8 +587,7 @@ public class BACnet {
 			}
 
 			if (line.hasOption("u")) {
-				databusURL = line.getOptionValue("u",
-						"databus.nrel.gov");
+				databusURL = line.getOptionValue("u");
 			}
 
 			if (line.hasOption("k")) {
