@@ -22,7 +22,7 @@ class TaskADiscoverAll implements Runnable, Callable<Object>, TrackableTask {
 	private Collection<BACnetDataWriter> writers;
 	private OurExecutor exec;
 	private TaskTracker tracker;
-        private ScheduledFuture<?> future;
+  private ScheduledFuture<?> future;
 	private int trackableTaskId;
 	private TaskBDiscoverer scan;
 

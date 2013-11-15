@@ -55,7 +55,7 @@ public class BACnet {
 	private BACnetDatabase database;
 	private TaskTracker tracker;
 
-        public BACnet(Config t_config)
+  public BACnet(Config t_config)
 	{
 		config = t_config;
 		tracker = new TaskTracker();
@@ -137,7 +137,7 @@ public class BACnet {
 	public void initializeDefaultScanner()
 	{
 		BACnetDataWriter[] writers;
-	        if (getDatabusDataWriter() != null) 
+		if (getDatabusDataWriter() != null) 
 		{
 		  writers = new BACnetDataWriter[1];
 		  writers[0] = getDatabusDataWriter();
@@ -220,6 +220,7 @@ public class BACnet {
 		execSvc = Executors.newFixedThreadPool(config.getNumThreads());
 		exec = new OurExecutor(svc, execSvc, recorderSvc);
 		String devname = config.getNetworkDevice();
+		// anya ? can't there be > 1 device id?
 		int device_id = config.getDeviceId();
 		NetworkInterface networkinterface = null;
 
@@ -275,6 +276,7 @@ public class BACnet {
 			slaveDeviceTimer.schedule(new gov.nrel.bacnet.SlaveDevice(localDevice, config), 1000, config.getSlaveDeviceUpdateInterval() * 1000);
 		}
 
+		// anya - possible to skip filter file?
 		String file = config.getFilterFileName();
 		String filterfile = readFile(file, Charset.forName("US-ASCII"));
 
@@ -626,9 +628,7 @@ public class BACnet {
 		return config;
 	}
 
-	
 	static class MyExceptionListener extends DefaultExceptionListener {
-		
 		@Override
 		public void unimplementedVendorService(UnsignedInteger vendorId,
 				UnsignedInteger serviceNumber, ByteQueue queue) {
@@ -639,15 +639,14 @@ public class BACnet {
 		        logger.info("Received unimplemented vendor service: vendor id=" + vendorId + ", service number="
 		                + serviceNumber + ", bytes (with context id)=" + queue);
 			}
-		}
-		
-	    public void receivedException(Exception e) {
-	        logger.log(Level.WARNING, "Exception", e);
-	    }
+		}		
+    public void receivedException(Exception e) {
+        logger.log(Level.WARNING, "Exception", e);
+    }
 
-	    public void receivedThrowable(Throwable t) {
-	    	logger.log(Level.WARNING, "Exc", t);
-	    }
+    public void receivedThrowable(Throwable t) {
+    	logger.log(Level.WARNING, "Exc", t);
+    }
 	}
 }
 
