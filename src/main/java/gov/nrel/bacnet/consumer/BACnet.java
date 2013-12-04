@@ -122,6 +122,11 @@ public class BACnet {
 		return logHandler;
 	}
 
+	public LocalDevice getLocalDevice()
+	{
+		return localDevice;
+	}
+
 
 	public JsonAllFilters getDefaultFilters()
 	{
