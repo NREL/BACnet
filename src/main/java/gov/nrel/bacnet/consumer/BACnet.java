@@ -139,23 +139,6 @@ public class BACnet {
 		return gson.fromJson(filters, JsonAllFilters.class);
 	}
 
-	public void initializeDefaultScanner()
-	{
-		BACnetDataWriter[] writers;
-	        if (getDatabusDataWriter() != null) 
-		{
-		  writers = new BACnetDataWriter[1];
-		  writers[0] = getDatabusDataWriter();
-		} else {
-		  writers = new BACnetDataWriter[0];
-		}
-
-		backgroundDiscoverer = scheduleScan(config.getMinId(), config.getMaxId(), getDefaultFilters(), writers, 
-			config.getScanInterval());
-	}
-
-	
-
 	private Collection<BACnetDataWriter> getWriters(BACnetDataWriter[] writers)
 	{
 		java.util.List<BACnetDataWriter> writerlist = new java.util.ArrayList(Arrays.asList(writers));

@@ -15,14 +15,6 @@ public class Main {
 		
 		logger.info("starting.  Parsing command line options");
 
-
-		try {
-			Config config = BACnet.parseOptions(args);
-			BACnet bacnet = new BACnet(config);
-			bacnet.initializeDefaultScanner();
-		} catch(Throwable e) {
-			logger.log(Level.WARNING, "exception starting", e);
-		}
 	}	
 
 }
