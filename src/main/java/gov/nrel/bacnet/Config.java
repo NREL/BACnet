@@ -2,10 +2,8 @@ package gov.nrel.bacnet;
 
 import java.util.logging.Logger;
 
-
 public class Config {
 	private static final Logger logger = Logger.getLogger(Config.class.getName());
-
 
 	private int scanInterval;
 	private int broadcastInterval;
@@ -169,36 +167,5 @@ public class Config {
 	public int getMaxId() {
 		return maxId;
 	}
-	
 
-//	public int deviceMatches(RemoteDevice t_rd) {
-//		return oidMatches(t_rd, null);
-//	}
-//
-//	public int oidMatches(RemoteDevice t_rd, ObjectIdentifier t_id) {
-//		Vector<DeviceFilter> t_filters = getFilters();
-//		if (t_filters == null) {
-//			return getDefaultPollInterval();
-//		}
-//
-//		for (DeviceFilter filter : t_filters) {
-//			if (filter.matches(t_rd)) {
-//				if (t_id == null) {
-//					return filter.timeBetweenScans;
-//				} else if (filter.oidFilters.isEmpty()) {
-//					// if there's no oidfilters, accept all of them for this
-//					// device
-//					return filter.timeBetweenScans;
-//				}
-//				
-//				for (OIDFilter oidFilter : filter.oidFilters) {
-//					if (oidFilter.matches(t_id)) {
-//						return oidFilter.timeBetweenScans;
-//					}
-//				}
-//			}
-//		}
-//
-//		return getDefaultPollInterval();
-//	}	
 }
