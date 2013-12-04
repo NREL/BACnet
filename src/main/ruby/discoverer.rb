@@ -1,19 +1,3 @@
-# require 'rubygems'
-# require 'bundler/setup'
-# require 'java'
-# Dir["../lib/\*.jar"].each { |jar| require jar }
-
-# todo distribute java code with gem?
-
-# to execute discovery
-
-  # $config = gov.nrel.bacnet.consumer.BACnet.parseOptions(ARGV)
-  # $bacnet = gov.nrel.bacnet.consumer.BACnet.new($config)
-  # configure database connection to persist state...
-  # d = Discoverer.new(low, high, $bacnet)
-  # d.broadcastWhoIs
-  # keep alive??
-
 class Discoverer 
   # initially we will just do this single-threaded.  it probably isn't that slow.  
   # do we want to just leave listener running?
@@ -46,7 +30,7 @@ class Discoverer
   def broadcastWhoIs step = 100, interval = 1
 
     # Executors.newScheduledThreadPool(1).scheduleAtFixedRate(self.broadcastOnInterval, 0, 1, TimeUnit::SECONDS)
-    # create whois ( see taskb#broadcastwhois)
+
     # set eventhandler on localdevice to manage sensors reporting in
     @local_device.getEventHandler().addListener(NewDeviceHandler.new);
 

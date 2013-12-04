@@ -14,13 +14,3 @@ local_device = bacnet.getLocalDevice
 discoverer = Discoverer.new(config.getMinId, config.getMaxId, local_device)
 discoverer.broadcastWhoIs 100
 
-# dummy device
-# dd = OpenStruct.new
-# dd.getInstanceNumber = 21
-
-# ndh = NewDeviceHandler.new
-# ndh.iAmReceived(dd)
-# t = KnownDevice.discovered(dd)
-# kd = KnownDevice.first
-# puts "DD after serialization: #{kd.get_remote_device}"
-
