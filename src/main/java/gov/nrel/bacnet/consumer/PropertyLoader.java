@@ -30,120 +30,88 @@ import com.serotonin.bacnet4j.util.PropertyValues;
 
 class PropertyLoader  {
 
-	private static final Logger log = Logger.getLogger(TaskCReadBasicProps.class.getName());
-	
-	// private JsonAllFilters deviceConfig;
-	// private Gson gson = new Gson();
-	// private String fileName;
-	private LocalDevice localDevice;
-	// private Collection<BACnetDataWriter> writers;
+  private static final Logger log = Logger.getLogger(TaskCReadBasicProps.class.getName());
+  
+  // private JsonAllFilters deviceConfig;
+  // private Gson gson = new Gson();
+  // private String fileName;
+  private LocalDevice localDevice;
+  // private Collection<BACnetDataWriter> writers;
 
-	// private PropertiesReader propReader;
-	// private String id;
-	
-	public PropertyLoader(LocalDevice ld) {
-		localDevice = ld;
-	}
+  // private PropertiesReader propReader;
+  // private String id;
+  
+  public PropertyLoader(LocalDevice ld) {
+    localDevice = ld;
+  }
 
-	public void requestProperties(RemoteDevice rd) throws BACnetException{
-		// List<Stream> streams = new ArrayList<Stream>();
-		// Device dev = new Device();
-		Map<ObjKey, Encodable> properties = new HashMap<ObjKey, Encodable>();
+  public List<ObjectIdentifier> getOids(RemoteDevice rd) throws BACnetException{
+    // List<Stream> streams = new ArrayList<Stream>();
+    // Device dev = new Device();
+    Map<ObjKey, Encodable> properties;
+    long startExt = System.currentTimeMillis();
+    //unfortunately, we need some of the info that is filled into the remote device for later to see
+    //if reading multiple properties is supported.
+    System.out.println("getting extended device info");
+    localDevice.getExtendedDeviceInformation(rd);
+    long total = System.currentTimeMillis()-startExt;
+    System.out.println("set extended device into in "+total);
+    // copying old code - think this is only used for writing
+    // setDeviceProps(rd, dev);
+    System.out.println("set props");
+    List<ObjectIdentifier> allOids = ((SequenceOf<ObjectIdentifier>) localDevice
+          .sendReadPropertyAllowNull(rd,
+              rd.getObjectIdentifier(),
+              PropertyIdentifier.objectList)).getValues();
+    System.out.println("returned from sendreadprop");
 
-		long startExt = System.currentTimeMillis();
-		//unfortunately, we need some of the info that is filled into the remote device for later to see
-		//if reading multiple properties is supported.
-		System.out.println("getting extended device info");
-		localDevice.getExtendedDeviceInformation(rd);
-		long total = System.currentTimeMillis()-startExt;
-		System.out.println("set extended device into in "+total);
-		// copying old code - think this is only used for writing
-		// setDeviceProps(rd, dev);
-		System.out.println("set props");
-		List<ObjectIdentifier> allOids = ((SequenceOf<ObjectIdentifier>) localDevice
-					.sendReadPropertyAllowNull(rd,
-							rd.getObjectIdentifier(),
-							PropertyIdentifier.objectList)).getValues();
-		System.out.println("returned from sendreadprop");
-		// for(ObjectIdentifier oid : allOids) {
-		// 	System.out.println("oid: "+ oid.toString());
-		// }
-		// copying from task c
-		PropertyReferences refs = new PropertyReferences();
-		List<ObjectIdentifier> oidsToPoll = setupRefs(allOids, refs);
-		System.out.println("refs size = "+ refs.size());
-		if(refs.size() > 0)
-			readAllProperties(rd, refs, properties);
+    return allOids;
+  }
 
-	}
+// possible that this must be run after getOids as that runs "getExtendedInformation"
+  public Map<ObjKey, Encodable> getProperties(RemoteDevice rd, List<ObjectIdentifier> oids) throws BACnetException {
+    Map<ObjKey, Encodable> properties = new HashMap<ObjKey, Encodable>();
+    PropertyReferences refs = setupRefs(oids);
 
-	private void readAllProperties(RemoteDevice rd,
-			PropertyReferences refs, Map<ObjKey, Encodable> properties) throws BACnetException {
-		PropertyValues propVals = localDevice.readProperties(rd, refs);
-		System.out.println("properties read");
-		// //Here we have an iterator of units and objectNames....
-		Iterator<ObjectPropertyReference> iterator = propVals.iterator();
-		while(iterator.hasNext()) {
-			ObjectPropertyReference ref = iterator.next();
-			ObjectIdentifier oid = ref.getObjectIdentifier();
-			PropertyIdentifier id = ref.getPropertyIdentifier();
-			
-			try {
-				Encodable value = propVals.get(ref);
-				ObjKey k = new ObjKey(oid, id);
-				properties.put(k, value);
-				System.out.println("id "+id+" objkey="+k+" value = "+value);
-			} catch(Exception e) {
-				System.out.println("Exception reading prop oid="+oid+" from id="+id+" device="+rd);
-				//Tons of stuff has no units and some stuff has no objectNames
-				// if(log.isLoggable(Level.FINE))
-					// log.log(Level.FINE, "Exception reading prop oid="+oid+" from id="+id+" device="+task.getRemoteDevice(), e);
-			}
-		}
-	}
-	// filter was applied here in original code
-	private List<ObjectIdentifier> setupRefs(List<ObjectIdentifier> cachedOids, PropertyReferences refs) {
-		List<ObjectIdentifier> oidsToPoll = new ArrayList<ObjectIdentifier>();
-		for(ObjectIdentifier oid : cachedOids) {
-				refs.add(oid, PropertyIdentifier.units);
-				refs.add(oid, PropertyIdentifier.objectName);
-				oidsToPoll.add(oid);
-		}
-		// this should return refs instead.  oidstopoll aren't needed now
-		return oidsToPoll;
-	}
-	// private void setDeviceProps(RemoteDevice rd, Device dev) {
-	// 	String deviceDescription = rd.getName();
-	// 	int spaceIndex = deviceDescription.indexOf(" ");
-	// 	int uscoreIndex = deviceDescription.indexOf("_");
-	// 	String site = deviceDescription.startsWith("NWTC") ? "NWTC" : "STM";
-	// 	String bldg = deviceDescription.startsWith("CP")
-	// 			|| deviceDescription.startsWith("FTU")
-	// 			|| deviceDescription.startsWith("1ST") ? "RSF"
-	// 			: (deviceDescription.startsWith("Garage") ? "Garage"
-	// 					: (spaceIndex < uscoreIndex
-	// 							&& spaceIndex != -1
-	// 							|| uscoreIndex == -1 ? deviceDescription
-	// 							.split(" ")[0]
-	// 							: deviceDescription.split("_")[0]));
-		
-	// 	String endUse = "unknown";
-	// 	String protocol = "BACNet";
+    System.out.println("oids size = "+oids.size()+" refs size = "+ refs.size());
+    PropertyValues propVals = localDevice.readProperties(rd, refs);
+    System.out.println("properties read");
+    // //Here we have an iterator of units and objectNames....
+    Iterator<ObjectPropertyReference> iterator = propVals.iterator();
+    while(iterator.hasNext()) {
+      ObjectPropertyReference ref = iterator.next();
+      ObjectIdentifier oid = ref.getObjectIdentifier();
+      PropertyIdentifier id = ref.getPropertyIdentifier();
+      
+      try {
+        // get encodable from propertyvalues by objectpropertyreference
+        Encodable value = propVals.get(ref);
+        ObjKey k = new ObjKey(oid, id);
+        properties.put(k, value);
+        System.out.println("type = "+oid.getObjectType()+" objkey="+k+" value = "+value);
+      } catch(Exception e) {
+        System.out.println("Exception reading prop oid="+oid+" from id="+id+" device="+rd);
+        //Tons of stuff has no units and some stuff has no objectNames
+        // if(log.isLoggable(Level.FINE))
+          // log.log(Level.FINE, "Exception reading prop oid="+oid+" from id="+id+" device="+task.getRemoteDevice(), e);
+      }
+    }
+    return properties;
+  }
+  // filter was applied here in original code
+  // basically, we are requesting 2 prop values from each oid on the device:
+  // units and objectName
+  private PropertyReferences setupRefs(List<ObjectIdentifier> cachedOids) {
+    PropertyReferences refs = new PropertyReferences();
+    for(ObjectIdentifier oid : cachedOids) {
+        refs.add(oid, PropertyIdentifier.units);
+        refs.add(oid, PropertyIdentifier.objectName);
+        // refs.add(oid, PropertyIdentifier.presentValue);
+    }
+    // this should return refs instead.  oidstopoll aren't needed now
+    return refs;
+  }
 
-	// 	String deviceId = DatabusDataWriter.BACNET_PREFIX+rd.getInstanceNumber();
-		
-	// 	log.info("setting up deviceobject="+deviceId);
-		
-	// 	dev.setDeviceId(deviceId);
-	// 	dev.setDeviceDescription(deviceDescription);
-	// 	dev.setOwner("NREL");
-	// 	dev.setSite(site);
-	// 	dev.setBldg(bldg);
-	// 	dev.setEndUse(endUse);
-	// 	dev.setProtocol(protocol);
-	// 	if(rd.getAddress() != null)
-	// 		dev.setAddress(rd.getAddress().toIpPortString());
-	// }
 
 
 
