@@ -77,7 +77,7 @@ private
     LoggerSingleton.logger.debug("initializing remote device with id #{instance_number}")
     ip = Base64.decode64(ip_base64).to_java_bytes
     address = com.serotonin.bacnet4j.type.constructed.Address.new(ip, port)
-    network = com.serotonin.bacnet4j.Network.new(network_number, network_address)
+    network = (network_number.present?) ? com.serotonin.bacnet4j.Network.new(network_number, network_address) : nil
     @remote_device = com.serotonin.bacnet4j.RemoteDevice.new(instance_number, address, network)
     @remote_device.setMaxAPDULengthAccepted(max_apdu_length_accepted)
     @remote_device.setVendorId(vendor_id)
