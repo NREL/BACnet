@@ -11,73 +11,94 @@ class KnownDevice
   field :instance_number, type: Integer
   field :discovered_heartbeat, type: DateTime
   field :poll_heartbeat, type: DateTime
-  field :serialized_remote_device, type: String #this is the remote device object from an iAm response, serialized
+  field :port, type: Integer
+  field :ip_base64, type: String #byte array ?!
+  field :network_number, type: Integer
+  field :network_address, type: String
+  field :max_apdu_length_accepted, type: Integer
+  field :segmentation_value, type: Integer 
+  field :vendor_id, type: Integer
 
-  # from http://www.bacnet.org/Bibliography/ES-7-96/ES-7-96.htm :
-  # Unlike other Objects, the Device Object's Instance number must be unique across the entire BACnet internetwork because it is used to uniquely identify the BACnet devices.
   index({ :instance_number => 1 }, :unique => true)
 
   @remote_device = nil
 
+  # has_many :oids
+
   # create or update Mongo 
   def self.discovered rd
     kd = KnownDevice.where(:instance_number => rd.getInstanceNumber).first
-    if kd.present?
-      # TODO compare remote_device to kd.remote_device (saved version of device)
-      kd.discovered_heartbeat = Time.now
-      kd.save
-    else
-          # //unfortunately, we need some of the info that is filled into the remote device for later to see
-    # //if reading multiple properties is supported.
-    # m_localDevice.getExtendedDeviceInformation(d);
-      kd = KnownDevice.create(:instance_number => rd.getInstanceNumber, :serialized_remote_device => YAML::dump(rd), :discovered_heartbeat => Time.now)
+    # TODO if the device is already known, do we want to look for any changes?
+    if kd.nil?
+      kd = KnownDevice.new(:instance_number => rd.getInstanceNumber)
+      kd.set_fields(rd)
     end 
+    kd.discovered_heartbeat = Time.now
+    kd.save
   end
 
+  # init the remote device if it isn't already
   def get_remote_device
     if @remote_device.nil?
-      @remote_device = YAML::load(serialized_remote_device)
+      init_remote_device
     end
     @remote_device
   end
 
   def load_properties local_device
-    LoggerSingleton.logger.info "loading properties for #{instance_number}"
+    puts "loading properties for #{instance_number}"
     read_in_device_oids_and_base_properties local_device
   end
   
-  private 
+
+  # called by static discover method if mongo doesn't already know this device
+  def set_fields rd 
+    require 'base64'
+    # assigning these props without "self." prefix doesn't work
+    address = rd.getAddress
+    if address.present?
+      self.port = address.getPort 
+      self.ip_base64 = Base64.encode64(String.from_java_bytes(address.getIpBytes))
+    end
+    network = rd.getNetwork 
+    if network.present?
+      self.network_number = network.getNetworkNumber
+      self.network_address = network.getNetworkAddressDottedString
+    end
+    self.max_apdu_length_accepted = rd.getMaxAPDULengthAccepted
+    self.vendor_id = rd.getVendorId
+    self.segmentation_value = rd.getSegmentationSupported.intValue
+  end
+
+private
+  # initialize remote device and related java objects
+  def init_remote_device 
+    require 'base64'
+    LoggerSingleton.logger.debug("initializing remote device with id #{instance_number}")
+    ip = Base64.decode64(ip_base64).to_java_bytes
+    address = com.serotonin.bacnet4j.type.constructed.Address.new(ip, port)
+    network = com.serotonin.bacnet4j.Network.new(network_number, network_address)
+    @remote_device = com.serotonin.bacnet4j.RemoteDevice.new(instance_number, address, network)
+    @remote_device.setMaxAPDULengthAccepted(max_apdu_length_accepted)
+    @remote_device.setVendorId(vendor_id)
+    seg = com.serotonin.bacnet4j.type.enumerated.Segmentation.new(segmentation_value)
+    @remote_device.setSegmentationSupported(seg)
+  end
 
   # returns oids available to poll for remote_device
   def read_in_device_oids_and_base_properties local_device
-    #   private List<ObjectIdentifier> readInDeviceOidsAndBaseProperties(TaskFPollDeviceTask task, List<Stream> streams, Device dev, String id2, int counter2)
+    p = gov.nrel.bacnet.consumer.PropertyLoader.new(local_device)
+    oids = p.getOids(self.get_remote_device)
+    l = Java::JavaUtil::ArrayList.new
+    test = com.serotonin.bacnet4j.type.primitive.ObjectIdentifier.new(oids.first.getObjectType,oids.first.getInstanceNumber)
 
-    # //unfortunately, we need some of the info that is filled into the remote device for later to see
-    # //if reading multiple properties is supported.
-    # TODO this method updates properties on remote_device, so we should really run this before we ever serialize it
-    local_device.getExtendedDeviceInformation(get_remote_device)
+    # puts "test = #{test}"
+    l.add(test)
+    puts "l = #{l.inspect}"
+    # oids is a List<ObjectIdentifier> that must be passed to getProperties
+    props = p.getProperties(get_remote_device,l)
 
-# copy from remote_device to new Device dev (not sure why)
-    # setDeviceProps(d, dev);
 
-    allOids = local_device.sendReadPropertyAllowNull(get_remote_device, get_remote_device.getObjectIdentifier, PropertyIdentifier.objectList).getValues
-
-    allOids.each do |oid|
-      puts "oid: #{oid.inspect}"
-    end
-
-    # refs = PropertyReferences.new
-
-    # ANYA - think this is not necessary now that we've separated polling from oid detection
-    # oidsToPoll = setupRefs(task, allOids, refs);
-
-    # boolean singleReadSuccess = true;
-    # if(refs.size() > 0)
-    #   singleReadSuccess = propReader.readAllProperties(task, refs, oidsToPoll, dev, streams, id);
-    # long totalProps = System.currentTimeMillis()-startProps;
-    
-    # log.info(id+"device count="+counter2+" device="+d.getInstanceNumber()+"refreshing oid information ext dev info="+total+"ms getting oids="+totalOid+"ms  props="+totalProps+"ms singleReadSuccess="+singleReadSuccess);
-    # return oidsToPoll;
   end
 
   def update_discovered_heartbeat
