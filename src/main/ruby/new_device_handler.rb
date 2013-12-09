@@ -7,7 +7,7 @@ class NewDeviceHandler < com.serotonin.bacnet4j.event.DefaultDeviceEventListener
     begin
       KnownDevice.discovered(remote_device)
     rescue Exception => e
-      LoggerSingleton.logger.error "error processing iamrecieved: #{e.to_s}"
+      LoggerSingleton.logger.error "\n\nerror processing iamrecieved: #{e.backtrace.join("\n")}"
     end
   end  
 end
