@@ -1,6 +1,7 @@
 require 'mongoid'
 require 'java'
 require 'yaml'
+require '../../../src/main/ruby/oid.rb'
 
 Mongoid.load!("../../../src/main/ruby/mongoid.yml", :development)
 
@@ -23,7 +24,7 @@ class KnownDevice
 
   @remote_device = nil
 
-  # has_many :oids
+  has_many :oids
 
   # create or update Mongo 
   def self.discovered rd
@@ -37,6 +38,14 @@ class KnownDevice
     kd.save
   end
 
+  def discover_oids local_device
+    p = gov.nrel.bacnet.consumer.PropertyLoader.new(local_device)
+    oids = p.getOids(self.get_remote_device)
+    oids.each do |oid|
+      Oid.discover(self, oid)
+    end
+  end
+
   # init the remote device if it isn't already
   def get_remote_device
     if @remote_device.nil?
@@ -45,10 +54,10 @@ class KnownDevice
     @remote_device
   end
 
-  def load_properties local_device
-    puts "loading properties for #{instance_number}"
-    read_in_device_oids_and_base_properties local_device
-  end
+  # def load_properties local_device
+  #   puts "loading properties for #{instance_number}"
+  #   read_in_device_oids_and_base_properties local_device
+  # end
   
 
   # called by static discover method if mongo doesn't already know this device
@@ -86,29 +95,21 @@ private
   end
 
   # returns oids available to poll for remote_device
-  def read_in_device_oids_and_base_properties local_device
-    p = gov.nrel.bacnet.consumer.PropertyLoader.new(local_device)
-    oids = p.getOids(self.get_remote_device)
-    l = Java::JavaUtil::ArrayList.new
-    test = com.serotonin.bacnet4j.type.primitive.ObjectIdentifier.new(oids.first.getObjectType,oids.first.getInstanceNumber)
+  # def read_in_device_oids_and_base_properties local_device
+    
+  #   # oids = p.getOids(self.get_remote_device)
+  #   # l = Java::JavaUtil::ArrayList.new
+  #   # oids.each do |oid|
+  #   #   l.add(com.serotonin.bacnet4j.type.primitive.ObjectIdentifier.new(oid.getObjectType, oid.getInstanceNumber))
+  #   #   # l.add(com.serotonin.bacnet4j.type.primitive.ObjectIdentifier.new(oid.getObjectType, oid.getInstanceNumber)
+  #   #   # l.add(com.serotonin.bacnet4j.type.primitive.ObjectIdentifier.new(oid.getObjectType, oid.getInstanceNumber)
+  #   # end
+  #   # test = com.serotonin.bacnet4j.type.primitive.ObjectIdentifier.new(oids.first.getObjectType,oids.first.getInstanceNumber)
 
-    # puts "test = #{test}"
-    l.add(test)
-    puts "l = #{l.inspect}"
-    # oids is a List<ObjectIdentifier> that must be passed to getProperties
-    props = p.getProperties(get_remote_device,l)
 
+  #   # oids is a List<ObjectIdentifier> that must be passed to getProperties
+  #   props = p.getProperties(get_remote_device,oids)
 
-  end
-
-  def update_discovered_heartbeat
-    iam_heartbeat = Time.now
-    save
-  end
-
-  def update_poll_heartbeat
-    poll_heartbeat = Time.now
-    save
-  end
+  # end
 
 end
