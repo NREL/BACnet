@@ -10,3 +10,4 @@ build/
 .classpath
 .rbenv-version
 Gemfile.lock
+logs/
