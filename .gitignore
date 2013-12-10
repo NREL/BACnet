@@ -9,3 +9,4 @@ build/
 .ruby-version
 .classpath
 .rbenv-version
+Gemfile.lock
