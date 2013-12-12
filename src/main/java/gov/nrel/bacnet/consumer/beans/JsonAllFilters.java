@@ -33,9 +33,7 @@ public class JsonAllFilters {
 		if(interval == null)
 			interval = 120*60; //120 minutes * 60 seconds/minute
 		
-		String deviceId = DatabusDataWriter.BACNET_PREFIX+remoteDevice.getInstanceNumber();
-		String tableName = PropertiesReader.formTableName(deviceId, oid);
-		log.info("For table="+tableName+" we are using an interval="+interval);
+		log.info("For device number="+remoteDevice.getInstanceNumber()+" we are using an interval="+interval);
 		return interval;
 	}
 	
