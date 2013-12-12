@@ -1,4 +1,4 @@
-package gov.nrel.bacnet.consumer;
+ package gov.nrel.bacnet.consumer;
 
 import gov.nrel.bacnet.consumer.beans.Device;
 // import gov.nrel.bacnet.consumer.beans.JsonAllFilters;
@@ -49,21 +49,13 @@ class PropertyLoader  {
     // List<Stream> streams = new ArrayList<Stream>();
     // Device dev = new Device();
     Map<ObjKey, Encodable> properties;
-    long startExt = System.currentTimeMillis();
-    //unfortunately, we need some of the info that is filled into the remote device for later to see
-    //if reading multiple properties is supported.
-    System.out.println("getting extended device info");
-    localDevice.getExtendedDeviceInformation(rd);
-    long total = System.currentTimeMillis()-startExt;
-    System.out.println("set extended device into in "+total);
+
     // copying old code - think this is only used for writing
     // setDeviceProps(rd, dev);
-    System.out.println("set props");
     List<ObjectIdentifier> allOids = ((SequenceOf<ObjectIdentifier>) localDevice
           .sendReadPropertyAllowNull(rd,
               rd.getObjectIdentifier(),
               PropertyIdentifier.objectList)).getValues();
-    System.out.println("returned from sendreadprop");
 
     return allOids;
   }
