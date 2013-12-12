@@ -128,7 +128,7 @@ public class BACnet {
 	}
 
 
-	public JsonAllFilters getDefaultFilters()
+	public JsonAllFilters getFilters()
 	{
 		return filters;
 	}
@@ -305,8 +305,8 @@ public class BACnet {
 		String devname = "eth0";
 
 
-		String filterFile = "../conf/example_filter.json";
-		String slaveDeviceConfigFile = "../conf/example_oid.json";
+		String filterFile = "conf/example_filter.json";
+		String slaveDeviceConfigFile = "conf/example_oid.json";
 
 		int slaveDeviceUpdateInterval = 10;
 
