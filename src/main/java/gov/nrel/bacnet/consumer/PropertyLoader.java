@@ -29,8 +29,8 @@ import com.serotonin.bacnet4j.type.constructed.ObjectPropertyReference;
 import com.serotonin.bacnet4j.util.PropertyValues;
 
 class PropertyLoader  {
-
-  private static final Logger log = Logger.getLogger(TaskCReadBasicProps.class.getName());
+// TODO fix logger
+  private static final Logger log = Logger.getLogger(PropertiesReader.class.getName());
   
   // private JsonAllFilters deviceConfig;
   // private Gson gson = new Gson();

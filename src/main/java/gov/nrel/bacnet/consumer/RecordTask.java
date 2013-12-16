@@ -12,16 +12,16 @@ import org.codehaus.jackson.map.ObjectMapper;
 
 
 
-public class TaskGRecordTask implements Runnable {
+public class RecordTask implements Runnable {
 
-	private static final Logger log = Logger.getLogger(TaskGRecordTask.class.getName());
+	private static final Logger log = Logger.getLogger(RecordTask.class.getName());
 	
 	private List<BACnetData> data;
 	private Collection<BACnetDataWriter> writers;
 
 	private static int counter = 0;
 	
-	public TaskGRecordTask(List<BACnetData> data, Collection<BACnetDataWriter> writers) {
+	public RecordTask(List<BACnetData> data, Collection<BACnetDataWriter> writers) {
 		this.writers = writers;
 		this.data = data;
 	}

@@ -37,15 +37,15 @@ import com.serotonin.bacnet4j.type.primitive.ObjectIdentifier;
 import com.serotonin.bacnet4j.util.PropertyReferences;
 import com.serotonin.bacnet4j.util.PropertyValues;
 
-class TaskFPollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
+class PollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
 
-	private static final Logger log = Logger.getLogger(TaskFPollDeviceTask.class.getName());
+	private static final Logger log = Logger.getLogger(PollDeviceTask.class.getName());
 	private RemoteDevice rd;
 	private LocalDevice m_localDevice;
-	private Counter latch;
+	private Counter latch; //what is latch used for here?
 	private int numTimesRun = 0;
 	private List<ObjectIdentifier> cachedOids = new ArrayList<ObjectIdentifier>();
-	private ScheduledFuture<?> future;
+	private ScheduledFuture<?> future; 
 	private Map<ObjectIdentifier, Integer> intervals = new HashMap<ObjectIdentifier, Integer>();
 	private Map<ObjectIdentifier, MultiplyConfig> multipliers = new HashMap<ObjectIdentifier, MultiplyConfig>();
 	private Map<ObjectIdentifier, Stream> streams = new HashMap<ObjectIdentifier, Stream>();
@@ -56,7 +56,7 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
 	private static int peakQueueSize = 0;
 	private int trackableTaskId;
 	
-	public TaskFPollDeviceTask(RemoteDevice d, LocalDevice local, OurExecutor exec, Collection<BACnetDataWriter> writers) {
+	public PollDeviceTask(RemoteDevice d, LocalDevice local, OurExecutor exec, Collection<BACnetDataWriter> writers) {
 		this.rd = d;
 		this.m_localDevice = local;
 		this.exec = exec;
@@ -103,7 +103,7 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
 				log.log(Level.WARNING, "Device timeout="+rd);
 		} finally {
 			numTimesRun++;
-			int theCount = latch.increment();
+			int theCount = latch.increment(); // shouldnt this be used instead of numtimesrun?
 			long total = System.currentTimeMillis()-start;
 			int inQueue = exec.getQueueCount();
 			int active = exec.getActiveCount();
@@ -153,11 +153,6 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
 		log.fine("Oids found: "+ cachedOids.size());
 		PropertyReferences refs = new PropertyReferences();
 		
-//This one is NOT necessary since localDevice.getExtendedDeviceInformation(RemoteDevice rd) already put the name
-//in the RemoteDevice itself!!! so just call remoteDevice.getName() to get this one.
-//		refs.add(rd.getObjectIdentifier(),
-//				PropertyIdentifier.objectName);
-
 		//xxx : comment out createOidRefs and see if there is a performance improvement!!!
 		createOidRefs(rd, cachedOids, refs);
 
@@ -202,7 +197,7 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
 		int active = recService.getActiveCount();
 		
 		log.info("launching databus writer.  active="+active+" queueCnt="+exec.getRecorderQueueCount());
-		TaskGRecordTask task = new TaskGRecordTask(data, writers);
+		RecordTask task = new RecordTask(data, writers);
 		
 		exec.getRecorderService().execute(task);
 	}
