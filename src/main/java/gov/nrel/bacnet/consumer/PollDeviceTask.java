@@ -21,6 +21,7 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -37,7 +38,7 @@ import com.serotonin.bacnet4j.type.primitive.ObjectIdentifier;
 import com.serotonin.bacnet4j.util.PropertyReferences;
 import com.serotonin.bacnet4j.util.PropertyValues;
 
-class PollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
+class PollDeviceTask implements Runnable, TrackableTask {
 
 	private static final Logger log = Logger.getLogger(PollDeviceTask.class.getName());
 	private RemoteDevice rd;
@@ -52,11 +53,11 @@ class PollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
 	
 	private Random r = new Random(System.currentTimeMillis());
 	private Collection<BACnetDataWriter> writers;
-	private OurExecutor exec;
+	private ExecutorService exec;
 	private static int peakQueueSize = 0;
 	private int trackableTaskId;
 	
-	public PollDeviceTask(RemoteDevice d, LocalDevice local, OurExecutor exec, Collection<BACnetDataWriter> writers) {
+	public PollDeviceTask(RemoteDevice d, LocalDevice local, ExecutorService exec, Collection<BACnetDataWriter> writers) {
 		this.rd = d;
 		this.m_localDevice = local;
 		this.exec = exec;
@@ -86,12 +87,6 @@ class PollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
 
 	@Override
 	public void run() {
-		log.info("throwing remote device in threadpool now="+rd);
-		exec.execute(this);
-	}
-	
-	@Override
-	public Object call() throws Exception {
 		Times t = new Times();
 		long start = System.currentTimeMillis();
 		try {
@@ -103,51 +98,9 @@ class PollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
 				log.log(Level.WARNING, "Device timeout="+rd);
 		} finally {
 			numTimesRun++;
-			int theCount = latch.increment(); // shouldnt this be used instead of numtimesrun?
-			long total = System.currentTimeMillis()-start;
-			int inQueue = exec.getQueueCount();
-			int active = exec.getActiveCount();
-			int peakQueue = setAndGetPeakQueue(inQueue);
-			log.info("Getting device info complete: " + rd+" num complete="+theCount
-					+" took="+total+" ms.  readprops="+t.getReadPropsTime()+" numTimesRun="+numTimesRun+" active="
-					+active+" inQueue="+inQueue+" peakBackup="+peakQueue);
-
-			if(inQueue > 50)
-				log.warning("Exceeded acceptable queue size(have too many devices polling too fast in tiny window)="+inQueue);
-
-			logAverages(total, t);
 		}
-		return null;
 	}
 
-	private static int setAndGetPeakQueue(int inQueue) {
-		peakQueueSize = Math.max(peakQueueSize, inQueue);
-		return peakQueueSize;
-	}
-
-	private static double totalSend;
-	private static double readPropsTime;
-	private static int counter;
-	private static synchronized void logAverages(long total, Times t) {
-		if(counter == 0) {
-			totalSend = total;
-			readPropsTime = t.getReadPropsTime();
-			counter++;
-			return;
-		}
-		
-		totalSend = newAverage(totalSend, total);
-		readPropsTime = newAverage(readPropsTime, t.getReadPropsTime());
-		
-		log.info("ave total="+totalSend+" readPropsAve="+readPropsTime);
-		counter++;
-	}
-
-	private static double newAverage(double totalSend2, long newVal) {
-		double totalVal = totalSend2*counter;
-		double newTotal = totalVal+newVal;
-		return newTotal / (counter+1);
-	}
 
 	public void sendRequest(Times times) throws PropertyValueException, BACnetException {
 		log.fine("Oids found: "+ cachedOids.size());
@@ -192,14 +145,11 @@ class PollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
 		while(propRefs.hasNext()) {
 			printDataPoint(propRefs.next(), pvs, time, curTime, data);
 		}
-		
-		ThreadPoolExecutor recService = exec.getRecorderService();
-		int active = recService.getActiveCount();
-		
-		log.info("launching databus writer.  active="+active+" queueCnt="+exec.getRecorderQueueCount());
+				
+		log.info("launching databus writer.");
 		RecordTask task = new RecordTask(data, writers);
 		
-		exec.getRecorderService().execute(task);
+		exec.execute(task);
 	}
 
 	private void readPropValsInBatches(PropertyReferences refs,
