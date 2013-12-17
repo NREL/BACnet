@@ -21,7 +21,7 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -43,7 +43,7 @@ class PollDeviceTask implements Runnable, TrackableTask {
 	private static final Logger log = Logger.getLogger(PollDeviceTask.class.getName());
 	private RemoteDevice rd;
 	private LocalDevice m_localDevice;
-	private Counter latch; //what is latch used for here?
+	// TODO make this atomic
 	private int numTimesRun = 0;
 	private List<ObjectIdentifier> cachedOids = new ArrayList<ObjectIdentifier>();
 	private ScheduledFuture<?> future; 
@@ -53,11 +53,11 @@ class PollDeviceTask implements Runnable, TrackableTask {
 	
 	private Random r = new Random(System.currentTimeMillis());
 	private Collection<BACnetDataWriter> writers;
-	private ExecutorService exec;
+	private ScheduledExecutorService exec;
 	private static int peakQueueSize = 0;
 	private int trackableTaskId;
 	
-	public PollDeviceTask(RemoteDevice d, LocalDevice local, ExecutorService exec, Collection<BACnetDataWriter> writers) {
+	public PollDeviceTask(RemoteDevice d, LocalDevice local, ScheduledExecutorService exec, Collection<BACnetDataWriter> writers) {
 		this.rd = d;
 		this.m_localDevice = local;
 		this.exec = exec;
@@ -102,20 +102,16 @@ class PollDeviceTask implements Runnable, TrackableTask {
 	}
 
 
-	public void sendRequest(Times times) throws PropertyValueException, BACnetException {
+	public void sendRequest(Times times) throws PropertyValueException, BACnetException, Exception {
 		log.fine("Oids found: "+ cachedOids.size());
 		PropertyReferences refs = new PropertyReferences();
 		
-		//xxx : comment out createOidRefs and see if there is a performance improvement!!!
-		createOidRefs(rd, cachedOids, refs);
-
-		log.info("Getting device info: " + rd+" size="+refs.size());
-		
-		if(refs.size() == 0) {
-			log.info("NO need to scan device="+rd+" as no refs where added");
+		if(cachedOids.size() == 0) {
+			log.info("NO need to scan device="+rd+" as no oids are registered to scan");
 			return;
 		}
-		
+		createOidRefs(rd, cachedOids, refs);
+
 		log.fine("Start read properties");
 
 		log.fine(String.format("Trying to read %d properties",
@@ -131,10 +127,10 @@ class PollDeviceTask implements Runnable, TrackableTask {
 			log.log(Level.FINE, "exception read properties", e);
 			readPropValsInBatches(refs, pvs);
 		}
-
-		if (rd.getObjectIdentifier().getObjectType().equals(ObjectType.trendLog) != false) {
-			log.finest("Skipping trend log: " + rd.toString());
-		}
+// trend logs are skipped via filter
+		// if (rd.getObjectIdentifier().getObjectType().equals(ObjectType.trendLog) != false) {
+		// 	log.finest("Skipping trend log: " + rd.toString());
+		// }
 		
 		long curTime = System.currentTimeMillis();
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd-hh:mm:ss.SSS");
@@ -145,11 +141,13 @@ class PollDeviceTask implements Runnable, TrackableTask {
 		while(propRefs.hasNext()) {
 			printDataPoint(propRefs.next(), pvs, time, curTime, data);
 		}
-				
+		for (BACnetData datum : data) {
+			log.info("data: time: "+datum.curTime + " value "+datum.value);
+		}
 		log.info("launching databus writer.");
-		RecordTask task = new RecordTask(data, writers);
-		
-		exec.execute(task);
+		for (BACnetDataWriter writer : writers) {
+			writer.oidsDiscovered(data);
+		}
 	}
 
 	private void readPropValsInBatches(PropertyReferences refs,
@@ -190,10 +188,8 @@ class PollDeviceTask implements Runnable, TrackableTask {
 	
 	private void createOidRefs(RemoteDevice rd, List<ObjectIdentifier> oids,
 			PropertyReferences refs) {
-		// and now from all objects under the device object >> ai0,
-		// ai1,bi0,bi1...
 		for (ObjectIdentifier oid : oids) {
-			if (!oid.getObjectType().equals(ObjectType.trendLog))
+			// if (!oid.getObjectType().equals(ObjectType.trendLog))
 				createOidRefsImpl(rd, oid, refs);
 		}
 	}
@@ -208,10 +204,6 @@ class PollDeviceTask implements Runnable, TrackableTask {
 		if(numTimesRun % multiplier == random) {
 			refs.add(oid, PropertyIdentifier.presentValue);
 		}
-	}
-
-	public void setCounter(Counter latch) {
-		this.latch = latch;
 	}
 
 	public void setCachedOids(List<ObjectIdentifier> cachedOids2) {
@@ -236,7 +228,7 @@ class PollDeviceTask implements Runnable, TrackableTask {
 	 * 
 	 * @return the delay to use
 	 */
-	public Delay initialize() {
+	public Delay init() {
 		//find the greatest common divisor on all these integers to schedule the task at
 		Collection<Integer> values = intervals.values();
 		log.info("intervals="+values);

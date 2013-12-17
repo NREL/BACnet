@@ -139,15 +139,17 @@ public class BACnet {
 		return gson.fromJson(filters, JsonAllFilters.class);
 	}
 
-	private Collection<BACnetDataWriter> getWriters(BACnetDataWriter[] writers)
+	public Collection<BACnetDataWriter> getDefaultWriters()
 	{
-		java.util.List<BACnetDataWriter> writerlist = new java.util.ArrayList(Arrays.asList(writers));
-
+		java.util.List<BACnetDataWriter> writerlist = new java.util.ArrayList();
+		if (getDatabusDataWriter() != null) 
+		{
+			writerlist.add(getDatabusDataWriter());
+		}
 		if (database != null)
 		{
 			writerlist.add(database);
 		}
-
 		return writerlist;
 	}
 
