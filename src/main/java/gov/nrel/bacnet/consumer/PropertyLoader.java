@@ -61,8 +61,8 @@ class PropertyLoader  {
   }
 
 // possible that this must be run after getOids as that runs "getExtendedInformation"
-  public Map<ObjKey, Encodable> getProperties(RemoteDevice rd, List<ObjectIdentifier> oids) throws BACnetException {
-    Map<ObjKey, Encodable> properties = new HashMap<ObjKey, Encodable>();
+  public Map<ObjKey, String> getProperties(RemoteDevice rd, List<ObjectIdentifier> oids) throws BACnetException {
+    Map<ObjKey, String> properties = new HashMap<ObjKey, String>();
     PropertyReferences refs = setupRefs(oids);
 
     System.out.println("oids size = "+oids.size()+" refs size = "+ refs.size());
@@ -76,8 +76,8 @@ class PropertyLoader  {
       PropertyIdentifier id = ref.getPropertyIdentifier();
       
       try {
-        // get encodable from propertyvalues by objectpropertyreference
-        Encodable value = propVals.get(ref);
+        // get encodable from propertyvalues by objectpropertyreference and convert  to string
+        String value = propVals.get(ref) + "";
         ObjKey k = new ObjKey(oid, id);
         properties.put(k, value);
         System.out.println("type = "+oid.getObjectType()+" objkey="+k+" value = "+value);

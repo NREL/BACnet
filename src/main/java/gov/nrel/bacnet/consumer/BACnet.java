@@ -41,11 +41,11 @@ public class BACnet {
 
 	private static final Logger logger = Logger.getLogger(Main.class.getName());
 	
-	private ScheduledThreadPoolExecutor svc;
+	private ScheduledThreadPoolExecutor pollingSchedSvc;
+	private ScheduledThreadPoolExecutor mainSchedSvc;
 	private ExecutorService execSvc;
-	private ExecutorService recorderSvc;
 	private Timer slaveDeviceTimer;
-	private OurExecutor exec;
+	// private OurExecutor exec;
 	private DatabusDataWriter writer;
 	private ScheduledFuture<?> backgroundDiscoverer;
 	private Config config;
@@ -55,7 +55,7 @@ public class BACnet {
 	private BACnetDatabase database;
 	private TaskTracker tracker;
 
-        public BACnet(Config t_config)
+  public BACnet(Config t_config)
 	{
 		config = t_config;
 		tracker = new TaskTracker();
@@ -117,6 +117,18 @@ public class BACnet {
 		Logger.getLogger("gov.nrel.bacnet").addHandler(logHandler);
 	}
 
+	public ExecutorService getExecSvc(){
+		return execSvc;
+	}
+
+	public ScheduledThreadPoolExecutor getMainSchedSvc(){
+		return mainSchedSvc;
+	}
+
+	public ScheduledThreadPoolExecutor getPollingSchedSvc(){
+		return pollingSchedSvc;
+	}
+
 	public LogHandler getLogger()
 	{
 		return logHandler;
@@ -156,11 +168,12 @@ public class BACnet {
 	private void initialize(Config config) throws IOException {
 		LinkedBlockingQueue<Runnable> queue = new LinkedBlockingQueue<Runnable>(1000);
 		RejectedExecutionHandler rejectedExec = new RejectedExecHandler();
-		recorderSvc = new ThreadPoolExecutor(20, 20, 120, TimeUnit.SECONDS, queue, rejectedExec );
+		execSvc = new ThreadPoolExecutor(20, 20, 120, TimeUnit.SECONDS, queue, rejectedExec );
 		
-		svc = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1);
-		execSvc = Executors.newFixedThreadPool(config.getNumThreads());
-		exec = new OurExecutor(svc, execSvc, recorderSvc);
+		mainSchedSvc = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1);
+		pollingSchedSvc = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(config.getNumThreads());
+		// execSvc = Executors.newFixedThreadPool(config.getNumThreads());
+		// exec = new OurExecutor(svc, execSvc, recorderSvc);
 		String devname = config.getNetworkDevice();
 		int device_id = config.getDeviceId();
 		NetworkInterface networkinterface = null;
@@ -249,12 +262,11 @@ public class BACnet {
 
 		if (config.getDatabusEnabled())
 		{
-			sender = new DatabusSender(username, key, deviceTable, streamTable, recorderSvc, config.getDatabusUrl(), config.getDatabusPort(), true);
+			sender = new DatabusSender(username, key, deviceTable, streamTable, execSvc, config.getDatabusUrl(), config.getDatabusPort(), true);
 		}
-
+		logger.info("databus sender: "+sender);
 		writer = new DatabusDataWriter(new DataPointWriter(sender));
-		
-		logger.info("Kicking off scanner object to run every "+config.getScanInterval()+" hours with broadcasts every "+config.getBroadcastInterval()+" seconds");
+		logger.info("databus writer" + writer);
 	}
 	
 	public static String readFile(String file, Charset cs) throws IOException {
