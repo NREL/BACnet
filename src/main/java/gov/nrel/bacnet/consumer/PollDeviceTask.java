@@ -18,10 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -38,7 +34,7 @@ import com.serotonin.bacnet4j.type.primitive.ObjectIdentifier;
 import com.serotonin.bacnet4j.util.PropertyReferences;
 import com.serotonin.bacnet4j.util.PropertyValues;
 
-class PollDeviceTask implements Runnable, TrackableTask {
+class PollDeviceTask implements Runnable {
 
 	private static final Logger log = Logger.getLogger(PollDeviceTask.class.getName());
 	private RemoteDevice rd;
@@ -46,27 +42,17 @@ class PollDeviceTask implements Runnable, TrackableTask {
 	// TODO make this atomic
 	private int numTimesRun = 0;
 	private List<ObjectIdentifier> cachedOids = new ArrayList<ObjectIdentifier>();
-	private ScheduledFuture<?> future; 
 	private Map<ObjectIdentifier, Integer> intervals = new HashMap<ObjectIdentifier, Integer>();
 	private Map<ObjectIdentifier, MultiplyConfig> multipliers = new HashMap<ObjectIdentifier, MultiplyConfig>();
 	private Map<ObjectIdentifier, Stream> streams = new HashMap<ObjectIdentifier, Stream>();
-	
 	private Random r = new Random(System.currentTimeMillis());
 	private Collection<BACnetDataWriter> writers;
-	private ScheduledExecutorService exec;
-	private static int peakQueueSize = 0;
 	private int trackableTaskId;
 	
-	public PollDeviceTask(RemoteDevice d, LocalDevice local, ScheduledExecutorService exec, Collection<BACnetDataWriter> writers) {
+	public PollDeviceTask(RemoteDevice d, LocalDevice local, Collection<BACnetDataWriter> writers) {
 		this.rd = d;
 		this.m_localDevice = local;
-		this.exec = exec;
 		this.writers = writers;
-	}
-
-	public void cancelTask()
-	{
-		future.cancel(true);
 	}
 
 	public String getDescription()
@@ -87,6 +73,7 @@ class PollDeviceTask implements Runnable, TrackableTask {
 
 	@Override
 	public void run() {
+		log.info("running poll task");
 		Times t = new Times();
 		long start = System.currentTimeMillis();
 		try {
@@ -127,7 +114,7 @@ class PollDeviceTask implements Runnable, TrackableTask {
 			log.log(Level.FINE, "exception read properties", e);
 			readPropValsInBatches(refs, pvs);
 		}
-// trend logs are skipped via filter
+// should not need to explicitly skip trend logs - happens via filter file
 		// if (rd.getObjectIdentifier().getObjectType().equals(ObjectType.trendLog) != false) {
 		// 	log.finest("Skipping trend log: " + rd.toString());
 		// }
@@ -175,7 +162,6 @@ class PollDeviceTask implements Runnable, TrackableTask {
 		data.add(d);
 	}
 
-
 	private Encodable tryGetValue(ObjectIdentifier oid,
 			PropertyValues pvs, PropertyIdentifier propId) {
 		try {
@@ -212,13 +198,6 @@ class PollDeviceTask implements Runnable, TrackableTask {
 
 	public RemoteDevice getRemoteDevice() {
 		return rd;
-	}
-
-	public void setFuture(ScheduledFuture<?> future) {
-		this.future = future;
-	}
-	public ScheduledFuture<?> getFuture() {
-		return future;
 	}
 
 	public void addInterval(ObjectIdentifier oid, int pollInSeconds) {
