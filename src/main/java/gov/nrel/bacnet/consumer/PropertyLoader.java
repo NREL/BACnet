@@ -31,27 +31,14 @@ import com.serotonin.bacnet4j.util.PropertyValues;
 class PropertyLoader  {
 // TODO fix logger
   private static final Logger log = Logger.getLogger(PropertiesReader.class.getName());
-  
-  // private JsonAllFilters deviceConfig;
-  // private Gson gson = new Gson();
-  // private String fileName;
   private LocalDevice localDevice;
-  // private Collection<BACnetDataWriter> writers;
-
-  // private PropertiesReader propReader;
-  // private String id;
   
   public PropertyLoader(LocalDevice ld) {
     localDevice = ld;
   }
 
   public List<ObjectIdentifier> getOids(RemoteDevice rd) throws BACnetException{
-    // List<Stream> streams = new ArrayList<Stream>();
-    // Device dev = new Device();
     Map<ObjKey, Encodable> properties;
-
-    // copying old code - think this is only used for writing
-    // setDeviceProps(rd, dev);
     List<ObjectIdentifier> allOids = ((SequenceOf<ObjectIdentifier>) localDevice
           .sendReadPropertyAllowNull(rd,
               rd.getObjectIdentifier(),
@@ -80,12 +67,9 @@ class PropertyLoader  {
         String value = propVals.get(ref) + "";
         ObjKey k = new ObjKey(oid, id);
         properties.put(k, value);
-        System.out.println("type = "+oid.getObjectType()+" objkey="+k+" value = "+value);
       } catch(Exception e) {
-        System.out.println("Exception reading prop oid="+oid+" from id="+id+" device="+rd);
+        log.info("Exception reading prop oid="+oid+" from id="+id+" device="+rd);
         //Tons of stuff has no units and some stuff has no objectNames
-        // if(log.isLoggable(Level.FINE))
-          // log.log(Level.FINE, "Exception reading prop oid="+oid+" from id="+id+" device="+task.getRemoteDevice(), e);
       }
     }
     return properties;
