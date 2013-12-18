@@ -41,9 +41,8 @@ public class BACnet {
 
 	private static final Logger logger = Logger.getLogger(Main.class.getName());
 	
-	private ScheduledThreadPoolExecutor pollingSchedSvc;
-	private ScheduledThreadPoolExecutor mainSchedSvc;
-	private ExecutorService execSvc;
+	private ScheduledThreadPoolExecutor schedSvc; //used for broadcast and polling
+	private ExecutorService execSvc; //used by databus meta loading/writing and by Oid discovery
 	private Timer slaveDeviceTimer;
 	// private OurExecutor exec;
 	private DatabusDataWriter writer;
@@ -121,12 +120,8 @@ public class BACnet {
 		return execSvc;
 	}
 
-	public ScheduledThreadPoolExecutor getMainSchedSvc(){
-		return mainSchedSvc;
-	}
-
-	public ScheduledThreadPoolExecutor getPollingSchedSvc(){
-		return pollingSchedSvc;
+	public ScheduledThreadPoolExecutor getSchedSvc(){
+		return schedSvc;
 	}
 
 	public LogHandler getLogger()
@@ -170,8 +165,7 @@ public class BACnet {
 		RejectedExecutionHandler rejectedExec = new RejectedExecHandler();
 		execSvc = new ThreadPoolExecutor(20, 20, 120, TimeUnit.SECONDS, queue, rejectedExec );
 		
-		mainSchedSvc = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1);
-		pollingSchedSvc = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(config.getNumThreads());
+		schedSvc = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(config.getNumThreads());
 		// execSvc = Executors.newFixedThreadPool(config.getNumThreads());
 		// exec = new OurExecutor(svc, execSvc, recorderSvc);
 		String devname = config.getNetworkDevice();
