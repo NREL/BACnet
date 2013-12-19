@@ -52,9 +52,9 @@ class PropertyLoader  {
     Map<ObjKey, String> properties = new HashMap<ObjKey, String>();
     PropertyReferences refs = setupRefs(oids);
 
-    System.out.println("oids size = "+oids.size()+" refs size = "+ refs.size());
+    //System.out.println("oids size = "+oids.size()+" refs size = "+ refs.size());
     PropertyValues propVals = localDevice.readProperties(rd, refs);
-    System.out.println("properties read");
+    //System.out.println("properties read");
     // //Here we have an iterator of units and objectNames....
     Iterator<ObjectPropertyReference> iterator = propVals.iterator();
     while(iterator.hasNext()) {
