@@ -25,7 +25,7 @@ class OurExecutor {
 			BlockingQueue<Runnable> queue = svc.getQueue();
 			int size = queue.size();
 			log.log(Level.FINE, "executor queue current size="+size+". Attempting to add task="+runnable);
-			if(size > 200) {
+			if(size > 1000) {
 				log.log(Level.WARNING, "Dropping task as queue is too full right now size="+size+" task="+runnable, new RuntimeException("queue too full, system backing up"));
 				return;
 			}
