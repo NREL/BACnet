@@ -158,7 +158,7 @@ public class BACnet {
 	private void initialize(Config config) throws IOException {
 		LinkedBlockingQueue<Runnable> queue = new LinkedBlockingQueue<Runnable>(1000);
 		RejectedExecutionHandler rejectedExec = new RejectedExecHandler();
-		execSvc = new ThreadPoolExecutor(20, 70, 120, TimeUnit.SECONDS, queue, rejectedExec );
+		execSvc = new ThreadPoolExecutor(20, 100, 120, TimeUnit.SECONDS, queue, rejectedExec );
 		schedSvc = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(config.getNumThreads());
 		exec = new OurExecutor(schedSvc, execSvc);
 		String devname = config.getNetworkDevice();
