@@ -43,6 +43,7 @@ public class BACnet {
 	
 	private ScheduledThreadPoolExecutor schedSvc; //used for broadcast and pollingz
 	private ExecutorService execSvc; 
+	private ExecutorService recorderSvc; 
 	private Timer slaveDeviceTimer;
 	private OurExecutor exec;
 	private DatabusDataWriter writer;
@@ -158,9 +159,12 @@ public class BACnet {
 	private void initialize(Config config) throws IOException {
 		LinkedBlockingQueue<Runnable> queue = new LinkedBlockingQueue<Runnable>(1000);
 		RejectedExecutionHandler rejectedExec = new RejectedExecHandler();
-		execSvc = new ThreadPoolExecutor(20, 100, 120, TimeUnit.SECONDS, queue, rejectedExec );
+		// schedule polling on single threaded service because local device instance is not threadsafe
+		execSvc = Executors.newFixedThreadPool(config.getNumThreads);
+		//give databus recording 2 threads to match old code
+		recorderSvc = new ThreadPoolExecutor(20, 20, 120, TimeUnit.SECONDS, queue, rejectedExec );
 		schedSvc = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(config.getNumThreads());
-		exec = new OurExecutor(schedSvc, execSvc);
+		exec = new OurExecutor(schedSvc, execSvc, recorderSvc);
 		String devname = config.getNetworkDevice();
 		int device_id = config.getDeviceId();
 		NetworkInterface networkinterface = null;

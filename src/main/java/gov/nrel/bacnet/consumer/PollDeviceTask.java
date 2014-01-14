@@ -21,6 +21,8 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import java.util.concurrent.ThreadPoolExecutor;
+
 import com.serotonin.bacnet4j.LocalDevice;
 import com.serotonin.bacnet4j.RemoteDevice;
 import com.serotonin.bacnet4j.exception.BACnetException;
@@ -48,11 +50,13 @@ class PollDeviceTask implements Runnable {
 	private Random r = new Random(System.currentTimeMillis());
 	private Collection<BACnetDataWriter> writers;
 	private int trackableTaskId;
+	private ThreadPoolExecutor recorderSvc;
 	
-	public PollDeviceTask(RemoteDevice d, LocalDevice local, Collection<BACnetDataWriter> writers) {
+	public PollDeviceTask(RemoteDevice d, LocalDevice local, Collection<BACnetDataWriter> writers, ThreadPoolExecutor recorderSvc) {
 		this.rd = d;
 		this.m_localDevice = local;
 		this.writers = writers;
+		this.recorderSvc = recorderSvc;
 	}
 
 	public String getDescription()
@@ -128,13 +132,14 @@ class PollDeviceTask implements Runnable {
 		while(propRefs.hasNext()) {
 			printDataPoint(propRefs.next(), pvs, time, curTime, data);
 		}
-		for (BACnetData datum : data) {
-			log.info("data: time: "+datum.curTime + " value "+datum.value);
-		}
-		log.info("launching databus writer.");
-		for (BACnetDataWriter writer : writers) {
-			writer.oidsDiscovered(data);
-		}
+		recorderSvc.execute(new RecordTask(data, writers));
+		// for (BACnetData datum : data) {
+		// 	log.info("data: time: "+datum.curTime + " value "+datum.value);
+		// }
+		// log.info("launching databus writer.");
+		// for (BACnetDataWriter writer : writers) {
+		// 	writer.oidsDiscovered(data);
+		// }
 	}
 
 	private void readPropValsInBatches(PropertyReferences refs,
@@ -143,6 +148,7 @@ class PollDeviceTask implements Runnable {
 		List<PropertyReferences> lprs = refs.getPropertiesPartitioned(10);
 
 		for (PropertyReferences prs : lprs) {
+			log.log(Level.WARNING, "batch property read: "+prs);
 			PropertyValues lpvs = m_localDevice.readProperties(rd, prs);
 
 			for (ObjectPropertyReference opr : lpvs) {

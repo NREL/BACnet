@@ -13,10 +13,12 @@ class OurExecutor {
 	private static final Logger log = Logger.getLogger(OurExecutor.class.getName());
 	private ThreadPoolExecutor svc;
 	private ScheduledExecutorService scheduledSvc;
+	private ThreadPoolExecutor recorderSvc;
 	
-	public OurExecutor(ScheduledExecutorService scheduledSvc, ExecutorService svc) {
+	public OurExecutor(ScheduledExecutorService scheduledSvc, ExecutorService svc, ExecutorService recorderSvc) {
 		this.scheduledSvc = scheduledSvc;
 		this.svc = (ThreadPoolExecutor) svc;
+		this.recorderSvc = (ThreadPoolExecutor)recorderSvc;
 	}
 	
 	public void execute(Runnable runnable) {
@@ -37,6 +39,10 @@ class OurExecutor {
 
 	public ScheduledExecutorService getScheduledSvc() {
 		return scheduledSvc;
+	}
+
+	public ThreadPoolExecutor getRecorderSvc() {
+		return recorderSvc;
 	}
 
 	public int getQueueCount() {
