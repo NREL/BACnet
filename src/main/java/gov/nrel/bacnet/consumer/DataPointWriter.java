@@ -44,7 +44,7 @@ class DataPointWriter {
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss.SSS");
 		String time = fmt.format(new Date());
 		
-		File f = new File("../logs/dataPoints"+time+".json");
+		File f = new File("logs/dataPoints"+time+".json");
 		f.createNewFile();
 		jsonw = new FileWriter(f, true);
 		counter = 0;

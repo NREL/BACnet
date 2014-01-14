@@ -41,13 +41,12 @@ public class BACnet {
 
 	private static final Logger logger = Logger.getLogger(Main.class.getName());
 	
-	private ScheduledThreadPoolExecutor svc;
-	private ExecutorService execSvc;
-	private ExecutorService recorderSvc;
+	private ScheduledThreadPoolExecutor schedSvc; //used for broadcast and pollingz
+	private ExecutorService execSvc; 
+	private ExecutorService recorderSvc; 
 	private Timer slaveDeviceTimer;
 	private OurExecutor exec;
 	private DatabusDataWriter writer;
-	private ScheduledFuture<?> backgroundDiscoverer;
 	private Config config;
 	private LocalDevice localDevice;
 	private JsonAllFilters filters;
@@ -55,7 +54,7 @@ public class BACnet {
 	private BACnetDatabase database;
 	private TaskTracker tracker;
 
-        public BACnet(Config t_config)
+  public BACnet(Config t_config)
 	{
 		config = t_config;
 		tracker = new TaskTracker();
@@ -117,13 +116,22 @@ public class BACnet {
 		Logger.getLogger("gov.nrel.bacnet").addHandler(logHandler);
 	}
 
+	public OurExecutor getOurExec(){
+		return exec;
+	}
+
 	public LogHandler getLogger()
 	{
 		return logHandler;
 	}
 
+	public LocalDevice getLocalDevice()
+	{
+		return localDevice;
+	}
 
-	public JsonAllFilters getDefaultFilters()
+
+	public JsonAllFilters getFilters()
 	{
 		return filters;
 	}
@@ -134,91 +142,29 @@ public class BACnet {
 		return gson.fromJson(filters, JsonAllFilters.class);
 	}
 
-	public void initializeDefaultScanner()
+	public Collection<BACnetDataWriter> getDefaultWriters()
 	{
-		BACnetDataWriter[] writers;
-	        if (getDatabusDataWriter() != null) 
+		java.util.List<BACnetDataWriter> writerlist = new java.util.ArrayList();
+		if (getDatabusDataWriter() != null) 
 		{
-		  writers = new BACnetDataWriter[1];
-		  writers[0] = getDatabusDataWriter();
-		} else {
-		  writers = new BACnetDataWriter[0];
+			writerlist.add(getDatabusDataWriter());
 		}
-
-		backgroundDiscoverer = scheduleScan(config.getMinId(), config.getMaxId(), getDefaultFilters(), writers, 
-			config.getScanInterval());
-	}
-
-	public ScheduledFuture<?> scheduleScan(int id, JsonAllFilters filters, BACnetDataWriter[] writers, int intervalInHours)
-	{
-	  return scheduleScan(id, id, filters, writers, intervalInHours);
-	}
-
-	private Collection<BACnetDataWriter> getWriters(BACnetDataWriter[] writers)
-	{
-		java.util.List<BACnetDataWriter> writerlist = new java.util.ArrayList(Arrays.asList(writers));
-
 		if (database != null)
 		{
 			writerlist.add(database);
 		}
-
 		return writerlist;
 	}
-
-
-	public ScheduledFuture<?> scheduleScan(int minId, int maxId, JsonAllFilters filters, BACnetDataWriter[] writers, int intervalInHours)
-	{
-		Config newconfig =
-			new Config(
-				intervalInHours, config.getBroadcastInterval(), config.getRange(), config.getNumThreads(), config.getNetworkDevice(), 
-				config.getVerboseLogging(), config.getVeryVerboseLogging(), config.getDeviceId(), config.getFilterFileName(), 
-				config.getLoggingPropertiesFileName(), config.getDatabusEnabled(), config.getDatabusDeviceTable(), 
-				config.getDatabusStreamTable(), config.getDatabusUserName(), config.getDatabusKey(),
-				config.getDatabusUrl(), config.getDatabusPort(), config.getSlaveDeviceEnabled(), config.getSlaveDeviceConfigFile(), 
-				config.getSlaveDeviceUpdateInterval(), minId, maxId
-			);
-	
-		TaskADiscoverAll all = new TaskADiscoverAll(localDevice, exec, newconfig, filters, getWriters(writers), tracker);
-		ScheduledFuture<?> future = svc.scheduleAtFixedRate(all, 0, newconfig.getScanInterval(), TimeUnit.HOURS);
-		all.setFuture(future);
-		tracker.add(all);
-		return future;
-	}
-
-	public ScheduledFuture<?> scheduleScan(int minId, int maxId, JsonAllFilters filters, BACnetDataWriter[] writers)
-	{
-		Config newconfig =
-			new Config(
-				0, config.getBroadcastInterval(), config.getRange(), config.getNumThreads(), config.getNetworkDevice(), 
-				config.getVerboseLogging(), config.getVeryVerboseLogging(), config.getDeviceId(), config.getFilterFileName(), 
-				config.getLoggingPropertiesFileName(), config.getDatabusEnabled(), config.getDatabusDeviceTable(), 
-				config.getDatabusStreamTable(), config.getDatabusUserName(), config.getDatabusKey(),
-				config.getDatabusUrl(), config.getDatabusPort(), config.getSlaveDeviceEnabled(), config.getSlaveDeviceConfigFile(), 
-				config.getSlaveDeviceUpdateInterval(), minId, maxId
-			);
-		
-		TaskADiscoverAll all = new TaskADiscoverAll(localDevice, exec, newconfig, filters, getWriters(writers), tracker);
-		ScheduledFuture<?> future = svc.schedule((Callable<Object>)all, 0, TimeUnit.HOURS);
-		all.setFuture(future);
-		tracker.add(all);
-		return future;
-	}
-
-	public ScheduledFuture<?> scheduleScan(int id, JsonAllFilters filters, BACnetDataWriter[] writers)
-	{
-	  return scheduleScan(id, id, filters, writers);
-	}
-
 
 	private void initialize(Config config) throws IOException {
 		LinkedBlockingQueue<Runnable> queue = new LinkedBlockingQueue<Runnable>(1000);
 		RejectedExecutionHandler rejectedExec = new RejectedExecHandler();
+		// schedule polling on single threaded service because local device instance is not threadsafe
+		execSvc = Executors.newFixedThreadPool(config.getNumThreads);
+		//give databus recording 2 threads to match old code
 		recorderSvc = new ThreadPoolExecutor(20, 20, 120, TimeUnit.SECONDS, queue, rejectedExec );
-		
-		svc = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1);
-		execSvc = Executors.newFixedThreadPool(config.getNumThreads());
-		exec = new OurExecutor(svc, execSvc, recorderSvc);
+		schedSvc = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(config.getNumThreads());
+		exec = new OurExecutor(schedSvc, execSvc, recorderSvc);
 		String devname = config.getNetworkDevice();
 		int device_id = config.getDeviceId();
 		NetworkInterface networkinterface = null;
@@ -307,12 +253,11 @@ public class BACnet {
 
 		if (config.getDatabusEnabled())
 		{
-			sender = new DatabusSender(username, key, deviceTable, streamTable, recorderSvc, config.getDatabusUrl(), config.getDatabusPort(), true);
+			sender = new DatabusSender(username, key, deviceTable, streamTable, execSvc, config.getDatabusUrl(), config.getDatabusPort(), true);
 		}
-
+		logger.info("databus sender: "+sender);
 		writer = new DatabusDataWriter(new DataPointWriter(sender));
-		
-		logger.info("Kicking off scanner object to run every "+config.getScanInterval()+" hours with broadcasts every "+config.getBroadcastInterval()+" seconds");
+		logger.info("databus writer" + writer);
 	}
 	
 	public static String readFile(String file, Charset cs) throws IOException {
@@ -365,8 +310,8 @@ public class BACnet {
 		String devname = "eth0";
 
 
-		String filterFile = "../conf/example_filter.json";
-		String slaveDeviceConfigFile = "../conf/example_oid.json";
+		String filterFile = "conf/example_filter.json";
+		String slaveDeviceConfigFile = "conf/example_oid.json";
 
 		int slaveDeviceUpdateInterval = 10;
 
@@ -396,8 +341,6 @@ public class BACnet {
 				"JSON filter file to use during scanning, default: " + filterFile);
 		options.addOption("d", "dev", true,
 				"Network device to use for broadcasts, default: " + devname);
-//		options.addOption("e", "example-filter-file", true,
-//				"Write an example JSON filter file out and exit, with the given filename");
 		options.addOption("s", "scan", false, "Enable scanning feature, default: " + scan);
 		options.addOption("S", "slave-device", false,
 				"Enable slave device feature, default: " + slaveDeviceEnabled);
@@ -410,9 +353,6 @@ public class BACnet {
 				"Amount of time (in ms) to wait between finishing one scan and starting another. default: " + scanInterval);
 		options.addOption("F", "oid-file", true,
 				"JSON oid file to use for the slave device configuration, default: " + slaveDeviceConfigFile);
-
-//		options.addOption("E", "example-oid-file", true,
-//				"Write an example JSON oid input file out and exit, with the given filename");
 		options.addOption("v", "verbose", false,
 				"Verbose logging (Info Level). Default is warning and error logging. default: " + verboseLogging);
 		options.addOption("vv", "very-verbose", false,
@@ -427,103 +367,17 @@ public class BACnet {
 				"Databus port for sending to Database, default: " + databusPort);
 		options.addOption("l", "logging-properties-file", true,
 				"File for loading logger configuration, default: " + loggingPropertiesFile);
-
 		options.addOption("databus", "databus-enabled", true, "Enable writing to databus. default: " + databusEnabled);
 
 		try {
 			CommandLine line = parser.parse(options, args);
-/*
-			if (line.hasOption("e")) {
-			        
-				System.out.println("Writing example JSON filter file to: "
-						+ line.getOptionValue("e"));
-
-				java.io.FileOutputStream jsonfile = null;
-				java.io.PrintWriter jsonw = null;
-
-				try {
-					jsonfile = new java.io.FileOutputStream(
-							line.getOptionValue("e"));
-				} catch (Exception e) {
-					System.out.println("Error writing example JSON file");
-					System.exit(-1);
-				}
-
-				if (jsonfile != null) {
-					jsonw = new java.io.PrintWriter(jsonfile, true);
-					com.google.gson.Gson gson = new com.google.gson.Gson();
-					Vector<DeviceFilter> examplefilters = new Vector<DeviceFilter>();
-					DeviceFilter f = new DeviceFilter();
-					f.instanceNumber = ".*";
-					f.networkNumber = ".*";
-					f.macAddress = ".*";
-					f.networkAddress = ".*";
-					f.timeBetweenScans = 30000;
-
-					OIDFilter of = new OIDFilter();
-					of.objectType = "Binary .*";
-					of.instanceNumber = "1.*";
-					of.timeBetweenScans = 60000;
-					f.oidFilters = new Vector<OIDFilter>();
-					f.oidFilters.add(of);
-					examplefilters.add(f);
-					jsonw.println(gson.toJson(examplefilters));
-				}
-			}
-
-			if (line.hasOption("E")) {
-				System.out.println("Writing example JSON oid file to: "
-						+ line.getOptionValue("E"));
-
-				java.io.FileOutputStream jsonfile = null;
-				java.io.PrintWriter jsonw = null;
-
-				try {
-					jsonfile = new java.io.FileOutputStream(
-							line.getOptionValue("E"));
-				} catch (Exception e) {
-					System.out.println("Error writing example JSON oid file");
-					System.exit(-1);
-				}
-
-				if (jsonfile != null) {
-					jsonw = new java.io.PrintWriter(jsonfile, true);
-					com.google.gson.Gson gson = new com.google.gson.Gson();
-					Vector<OIDValue> exampleoids = new Vector<OIDValue>();
-					OIDValue i = new OIDValue();
-					i.objectName = "some_object";
-					i.objectType = "analog input";
-					i.objectSource = "echo {value:\"72.5\", timestamp:\"2012-02-01 12:00:00\", units:\"degrees fahrenheit\"}";
-					exampleoids.add(i);
-
-					OIDValue i2 = new OIDValue();
-					i2.objectName = "some_object 2";
-					i2.objectType = "binary input";
-					i2.objectSource = "echo {value:\"true\", timestamp:\"2012-02-01 12:00:00\", units:\"\"}";
-
-					exampleoids.add(i2);
-					jsonw.println(gson.toJson(exampleoids));
-				}
-
-			}
-
-			if (line.hasOption("e") || line.hasOption("E")) {
-				System.exit(0);
-			}
-*/
-
 			scanInterval = Integer.parseInt(line.getOptionValue("t",
 					"168"));
-			// time_to_scan = Integer.parseInt(line.getOptionValue("T", "-1"));
 			device_id = Integer.parseInt(line.getOptionValue("i", "1234"));
 			scan = line.hasOption("s");
-
 			slaveDeviceEnabled = line.hasOption("S");
-
-		
 			min_id = Integer.parseInt(line.getOptionValue("m", "-1"));
 			max_id = min_id;
-
 			max_id = Integer.parseInt(line.getOptionValue("M", "-1"));
 
 			if (min_id == -1) {
@@ -552,7 +406,6 @@ public class BACnet {
 						options, "", true);
 				System.exit(-1);
 			}
-			
 
 			if (line.hasOption("D")
 					&& (line.hasOption("m") || line.hasOption("M"))) {
@@ -625,7 +478,6 @@ public class BACnet {
 
 		return config;
 	}
-
 	
 	static class MyExceptionListener extends DefaultExceptionListener {
 		
@@ -650,148 +502,3 @@ public class BACnet {
 	    }
 	}
 }
-
-
-
-
-
-/*
-		Logger logger = Logger.getLogger("BACnetScanner");
-
-		try {
-			FileHandler fh = new FileHandler("LogFile.log", true);
-			logger.addHandler(fh);
-			SimpleFormatter formatter = new SimpleFormatter();
-			fh.setFormatter(formatter);
-		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Unable to create log file", e);
-		}
-
-		logger.setLevel(log_level);
-
-		NetworkInterface networkinterface = null;
-
-		try {
-			networkinterface = java.net.NetworkInterface.getByName(devname);
-		} catch (Exception ex) {
-			System.out.println("Unable to open device: " + devname);
-			System.exit(-1);
-		}
-
-		if (networkinterface == null) {
-			System.out.println("Unable to open device: " + devname);
-			System.exit(-1);
-		}
-
-		List<InterfaceAddress> addresses = networkinterface
-				.getInterfaceAddresses();
-
-		String sbroadcast = null;
-		String saddress = null;
-		InterfaceAddress ifaceaddr = null;
-
-		for (InterfaceAddress address : addresses) {
-			logger.fine("Evaluating address: " + address.toString());
-			if (address.getAddress().getAddress().length == 4) {
-				logger.info("Address is ipv4, selecting: " + address.toString());
-				sbroadcast = address.getBroadcast().toString().substring(1);
-				saddress = address.getAddress().toString().substring(1);
-				ifaceaddr = address;
-				break;
-			} else {
-				logger.info("Address is not ipv4, not selecting: "
-						+ address.toString());
-			}
-		}
-
-		logger.info("Binding to: " + saddress + " " + sbroadcast);
-
-		LocalDevice localDevice = new LocalDevice(device_id, sbroadcast);
-		localDevice.setPort(LocalDevice.DEFAULT_PORT);
-		localDevice.setTimeout(localDevice.getTimeout() * 3);
-		localDevice.setSegTimeout(localDevice.getSegTimeout() * 3);
-		try {
-			localDevice.initialize();
-		} catch (IOException e) {
-			e.printStackTrace();
-			return;
-		}
-
-		Scan s = null;
-
-		if (scan) {
-			logger.info("Creating scanner object");
-			s = new Scan(localDevice, min, max, filters, time_between_updates);
-		}
-
-		SlaveDevice sd = null;
-
-		if (slaveDeviceEnabled) {
-			logger.info("Creating slave device object");
-			sd = new SlaveDevice(localDevice, oidvalues);
-		}
-
-		if ((slaveDeviceEnabled == false && scan == false)
-				|| (slaveDeviceEnabled == false && scan != false && time_to_scan == 0)) {
-			logger.severe("Nothing to do, no slaveDeviceEnabled enabled and no scan enabled, or scan enabled and numscans set to 0");
-		}
-
-		java.util.Date lastSlaveUpdate = null;
-                java.util.Date startTime = new java.util.Date();
-
-		for (int i = 0; 
-                     s != null && (time_to_scan == -1 || (new java.util.Date()).getTime() - startTime.getTime() < time_to_scan ); 
-                     ++i) 
-                {
-
-			if (slaveDeviceEnabled) {
-				boolean doupdate = false;
-				java.util.Date now = new java.util.Date();
-				if (lastSlaveUpdate == null) {
-					doupdate = true;
-				} else {
-					if (now.getTime() - lastSlaveUpdate.getTime() >= time_between_updates) {
-						doupdate = true;
-					}
-				}
-
-				if (doupdate) {
-					logger.info("Updating slave device");
-					sd.updateValues();
-					lastSlaveUpdate = now;
-				}
-			}
-
-			s.run();
-
-			// Thread.sleep(time_between_updates);
-		}
-
-                logger.info("Scanning complete");
-
-                // keep running if we have a slaveDeviceEnabled
-
-                while (slaveDeviceEnabled) { 
-                  boolean doupdate = false; 
-                  java.util.Date now = new java.util.Date(); 
-                  
-                  if (lastSlaveUpdate == null) { 
-                    doupdate = true;
-                  } else { 
-                    if (now.getTime() - lastSlaveUpdate.getTime() >= time_between_updates) 
-                    { 
-                      doupdate = true; 
-                    } 
-                  }
-
-                  if (doupdate) { 
-                    logger.info("Updating slave device");
-                    sd.updateValues(); lastSlaveUpdate = now; 
-                  }
-
-                  Thread.sleep(1000); 
-                }
-
-                logger.info("Shutting down"); localDevice.terminate();
-	}
-*/

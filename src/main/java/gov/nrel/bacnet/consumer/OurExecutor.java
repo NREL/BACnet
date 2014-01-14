@@ -21,17 +21,17 @@ class OurExecutor {
 		this.recorderSvc = (ThreadPoolExecutor)recorderSvc;
 	}
 	
-	public void execute(Callable<Object> callable) {
+	public void execute(Runnable runnable) {
+		log.info("runnable: "+runnable);
 		try {
 			BlockingQueue<Runnable> queue = svc.getQueue();
 			int size = queue.size();
-			if(size > 200) {
-				log.log(Level.WARNING, "Dropping task as queue is too full right now size="+size+" task="+callable, new RuntimeException("queue too full, system backing up"));
+			log.log(Level.FINE, "executor queue current size="+size+". Attempting to add task="+runnable);
+			if(size > 1000) {
+				log.log(Level.WARNING, "Dropping task as queue is too full right now size="+size+" task="+runnable, new RuntimeException("queue too full, system backing up"));
 				return;
 			}
-			
-			ExecutorRunnable r = new ExecutorRunnable(callable);
-			svc.execute(r);
+			svc.execute(runnable);
 		} catch(Exception e) {
 			log.log(Level.WARNING, "Exception moving task into thread pool", e);
 		}
@@ -39,6 +39,10 @@ class OurExecutor {
 
 	public ScheduledExecutorService getScheduledSvc() {
 		return scheduledSvc;
+	}
+
+	public ThreadPoolExecutor getRecorderSvc() {
+		return recorderSvc;
 	}
 
 	public int getQueueCount() {
@@ -50,12 +54,4 @@ class OurExecutor {
 		return svc.getActiveCount();
 	}
 	
-	public ThreadPoolExecutor getRecorderService() {
-		return recorderSvc;
-	}
-	
-	public int getRecorderQueueCount() {
-		BlockingQueue<Runnable> queue = recorderSvc.getQueue();
-		return queue.size();
-	}
 }

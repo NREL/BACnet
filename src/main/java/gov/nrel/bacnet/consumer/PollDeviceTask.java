@@ -18,11 +18,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import java.util.concurrent.ThreadPoolExecutor;
 
 import com.serotonin.bacnet4j.LocalDevice;
 import com.serotonin.bacnet4j.RemoteDevice;
@@ -37,35 +36,27 @@ import com.serotonin.bacnet4j.type.primitive.ObjectIdentifier;
 import com.serotonin.bacnet4j.util.PropertyReferences;
 import com.serotonin.bacnet4j.util.PropertyValues;
 
-class TaskFPollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
+class PollDeviceTask implements Runnable {
 
-	private static final Logger log = Logger.getLogger(TaskFPollDeviceTask.class.getName());
+	private static final Logger log = Logger.getLogger(PollDeviceTask.class.getName());
 	private RemoteDevice rd;
 	private LocalDevice m_localDevice;
-	private Counter latch;
+	// TODO make this atomic
 	private int numTimesRun = 0;
 	private List<ObjectIdentifier> cachedOids = new ArrayList<ObjectIdentifier>();
-	private ScheduledFuture<?> future;
 	private Map<ObjectIdentifier, Integer> intervals = new HashMap<ObjectIdentifier, Integer>();
 	private Map<ObjectIdentifier, MultiplyConfig> multipliers = new HashMap<ObjectIdentifier, MultiplyConfig>();
 	private Map<ObjectIdentifier, Stream> streams = new HashMap<ObjectIdentifier, Stream>();
-	
 	private Random r = new Random(System.currentTimeMillis());
 	private Collection<BACnetDataWriter> writers;
-	private OurExecutor exec;
-	private static int peakQueueSize = 0;
 	private int trackableTaskId;
+	private ThreadPoolExecutor recorderSvc;
 	
-	public TaskFPollDeviceTask(RemoteDevice d, LocalDevice local, OurExecutor exec, Collection<BACnetDataWriter> writers) {
+	public PollDeviceTask(RemoteDevice d, LocalDevice local, Collection<BACnetDataWriter> writers, ThreadPoolExecutor recorderSvc) {
 		this.rd = d;
 		this.m_localDevice = local;
-		this.exec = exec;
 		this.writers = writers;
-	}
-
-	public void cancelTask()
-	{
-		future.cancel(true);
+		this.recorderSvc = recorderSvc;
 	}
 
 	public String getDescription()
@@ -86,12 +77,7 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
 
 	@Override
 	public void run() {
-		log.info("throwing remote device in threadpool now="+rd);
-		exec.execute(this);
-	}
-	
-	@Override
-	public Object call() throws Exception {
+		log.info("running poll task");
 		Times t = new Times();
 		long start = System.currentTimeMillis();
 		try {
@@ -103,71 +89,20 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
 				log.log(Level.WARNING, "Device timeout="+rd);
 		} finally {
 			numTimesRun++;
-			int theCount = latch.increment();
-			long total = System.currentTimeMillis()-start;
-			int inQueue = exec.getQueueCount();
-			int active = exec.getActiveCount();
-			int peakQueue = setAndGetPeakQueue(inQueue);
-			log.info("Getting device info complete: " + rd+" num complete="+theCount
-					+" took="+total+" ms.  readprops="+t.getReadPropsTime()+" numTimesRun="+numTimesRun+" active="
-					+active+" inQueue="+inQueue+" peakBackup="+peakQueue);
-
-			if(inQueue > 50)
-				log.warning("Exceeded acceptable queue size(have too many devices polling too fast in tiny window)="+inQueue);
-
-			logAverages(total, t);
 		}
-		return null;
 	}
 
-	private static int setAndGetPeakQueue(int inQueue) {
-		peakQueueSize = Math.max(peakQueueSize, inQueue);
-		return peakQueueSize;
-	}
 
-	private static double totalSend;
-	private static double readPropsTime;
-	private static int counter;
-	private static synchronized void logAverages(long total, Times t) {
-		if(counter == 0) {
-			totalSend = total;
-			readPropsTime = t.getReadPropsTime();
-			counter++;
-			return;
-		}
-		
-		totalSend = newAverage(totalSend, total);
-		readPropsTime = newAverage(readPropsTime, t.getReadPropsTime());
-		
-		log.info("ave total="+totalSend+" readPropsAve="+readPropsTime);
-		counter++;
-	}
-
-	private static double newAverage(double totalSend2, long newVal) {
-		double totalVal = totalSend2*counter;
-		double newTotal = totalVal+newVal;
-		return newTotal / (counter+1);
-	}
-
-	public void sendRequest(Times times) throws PropertyValueException, BACnetException {
+	public void sendRequest(Times times) throws PropertyValueException, BACnetException, Exception {
 		log.fine("Oids found: "+ cachedOids.size());
 		PropertyReferences refs = new PropertyReferences();
 		
-//This one is NOT necessary since localDevice.getExtendedDeviceInformation(RemoteDevice rd) already put the name
-//in the RemoteDevice itself!!! so just call remoteDevice.getName() to get this one.
-//		refs.add(rd.getObjectIdentifier(),
-//				PropertyIdentifier.objectName);
-
-		//xxx : comment out createOidRefs and see if there is a performance improvement!!!
-		createOidRefs(rd, cachedOids, refs);
-
-		log.info("Getting device info: " + rd+" size="+refs.size());
-		
-		if(refs.size() == 0) {
-			log.info("NO need to scan device="+rd+" as no refs where added");
+		if(cachedOids.size() == 0) {
+			log.info("NO need to scan device="+rd+" as no oids are registered to scan");
 			return;
 		}
-		
+		createOidRefs(rd, cachedOids, refs);
+
 		log.fine("Start read properties");
 
 		log.fine(String.format("Trying to read %d properties",
@@ -183,10 +118,10 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
 			log.log(Level.FINE, "exception read properties", e);
 			readPropValsInBatches(refs, pvs);
 		}
-
-		if (rd.getObjectIdentifier().getObjectType().equals(ObjectType.trendLog) != false) {
-			log.finest("Skipping trend log: " + rd.toString());
-		}
+// should not need to explicitly skip trend logs - happens via filter file
+		// if (rd.getObjectIdentifier().getObjectType().equals(ObjectType.trendLog) != false) {
+		// 	log.finest("Skipping trend log: " + rd.toString());
+		// }
 		
 		long curTime = System.currentTimeMillis();
 		SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd-hh:mm:ss.SSS");
@@ -197,14 +132,14 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
 		while(propRefs.hasNext()) {
 			printDataPoint(propRefs.next(), pvs, time, curTime, data);
 		}
-		
-		ThreadPoolExecutor recService = exec.getRecorderService();
-		int active = recService.getActiveCount();
-		
-		log.info("launching databus writer.  active="+active+" queueCnt="+exec.getRecorderQueueCount());
-		TaskGRecordTask task = new TaskGRecordTask(data, writers);
-		
-		exec.getRecorderService().execute(task);
+		recorderSvc.execute(new RecordTask(data, writers));
+		// for (BACnetData datum : data) {
+		// 	log.info("data: time: "+datum.curTime + " value "+datum.value);
+		// }
+		// log.info("launching databus writer.");
+		// for (BACnetDataWriter writer : writers) {
+		// 	writer.oidsDiscovered(data);
+		// }
 	}
 
 	private void readPropValsInBatches(PropertyReferences refs,
@@ -213,6 +148,7 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
 		List<PropertyReferences> lprs = refs.getPropertiesPartitioned(10);
 
 		for (PropertyReferences prs : lprs) {
+			log.log(Level.WARNING, "batch property read: "+prs);
 			PropertyValues lpvs = m_localDevice.readProperties(rd, prs);
 
 			for (ObjectPropertyReference opr : lpvs) {
@@ -232,7 +168,6 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
 		data.add(d);
 	}
 
-
 	private Encodable tryGetValue(ObjectIdentifier oid,
 			PropertyValues pvs, PropertyIdentifier propId) {
 		try {
@@ -245,10 +180,8 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
 	
 	private void createOidRefs(RemoteDevice rd, List<ObjectIdentifier> oids,
 			PropertyReferences refs) {
-		// and now from all objects under the device object >> ai0,
-		// ai1,bi0,bi1...
 		for (ObjectIdentifier oid : oids) {
-			if (!oid.getObjectType().equals(ObjectType.trendLog))
+			// if (!oid.getObjectType().equals(ObjectType.trendLog))
 				createOidRefsImpl(rd, oid, refs);
 		}
 	}
@@ -265,23 +198,12 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
 		}
 	}
 
-	public void setCounter(Counter latch) {
-		this.latch = latch;
-	}
-
 	public void setCachedOids(List<ObjectIdentifier> cachedOids2) {
 		this.cachedOids = cachedOids2;
 	}
 
 	public RemoteDevice getRemoteDevice() {
 		return rd;
-	}
-
-	public void setFuture(ScheduledFuture<?> future) {
-		this.future = future;
-	}
-	public ScheduledFuture<?> getFuture() {
-		return future;
 	}
 
 	public void addInterval(ObjectIdentifier oid, int pollInSeconds) {
@@ -291,7 +213,7 @@ class TaskFPollDeviceTask implements Runnable, Callable<Object>, TrackableTask {
 	 * 
 	 * @return the delay to use
 	 */
-	public Delay initialize() {
+	public Delay init() {
 		//find the greatest common divisor on all these integers to schedule the task at
 		Collection<Integer> values = intervals.values();
 		log.info("intervals="+values);

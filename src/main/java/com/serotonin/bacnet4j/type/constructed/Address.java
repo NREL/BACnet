@@ -106,7 +106,7 @@ public class Address extends BaseType {
         return toIpString() + ":" + getPort();
     }
 
-    private byte[] getIpBytes() {
+    public byte[] getIpBytes() {
         if (ipAddressAndPort.getLength() == 4)
             return ipAddressAndPort.getBytes();
 

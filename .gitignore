@@ -8,3 +8,6 @@ build/
 .DS_Store
 .ruby-version
 .classpath
+.rbenv-version
+Gemfile.lock
+logs/
