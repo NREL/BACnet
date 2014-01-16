@@ -1,7 +1,0 @@
-1. build.sh build
-2. scp output/distributions/bacnet.tar.gz to destination
-3. Untar which results in bin, conf and lib directories(logs dir will be generated as well once you start it)
-4. cd bin
-5. run ./start.sh & 
-
-This runs the default configuration.  If you need to enable the scraper & slave device, then make sure to update the start.sh script to include the required flag.

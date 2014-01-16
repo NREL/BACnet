@@ -1,4 +1,3 @@
-/bin/
 build/
 .settings/
 .project
@@ -10,4 +9,3 @@ build/
 .classpath
 .rbenv-version
 Gemfile.lock
-logs/

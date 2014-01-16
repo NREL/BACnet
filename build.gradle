@@ -26,11 +26,6 @@ dependencies {
     compile fileTree(dir: 'lib', include: '*.jar')
 }
 
-task staging(type: Sync) {
-    from(stagingDir) {}
-    into toStagingDir
-}
-
 task syncJars(type: Sync) {
     from(configurations.compile) {}
     from(fixedLibDir) {}
@@ -49,7 +44,6 @@ task myZip(type: Tar) {
     }
 }
 
-syncJars.dependsOn('staging')
 copyMainJar.dependsOn('syncJars')
 myZip.dependsOn('copyMainJar')
 assemble.dependsOn('myZip')
