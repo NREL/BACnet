@@ -177,7 +177,7 @@ public class BACnet {
 		LinkedBlockingQueue<Runnable> queue = new LinkedBlockingQueue<Runnable>(1000);
 		RejectedExecutionHandler rejectedExec = new RejectedExecHandler();
 		// schedule polling on single threaded service because local device instance is not threadsafe
-		execSvc = Executors.newFixedThreadPool(config.getNumThreads);
+		execSvc = Executors.newFixedThreadPool(config.getNumThreads());
 		//give databus recording 2 threads to match old code
 		recorderSvc = new ThreadPoolExecutor(20, 20, 120, TimeUnit.SECONDS, queue, rejectedExec );
 		schedSvc = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(config.getNumThreads());
