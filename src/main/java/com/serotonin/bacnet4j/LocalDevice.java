@@ -107,6 +107,8 @@ import com.serotonin.bacnet4j.type.primitive.UnsignedInteger;
 import com.serotonin.bacnet4j.util.PropertyReferences;
 import com.serotonin.bacnet4j.util.PropertyValues;
 import com.serotonin.util.Tuple;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Enhancements: - default character string encoding - BIBBs (B-OWS) (services to implement) - AE-N-A - AE-ACK-A -
@@ -116,6 +118,7 @@ import com.serotonin.util.Tuple;
  * @author mlohbihler
  */
 public class LocalDevice implements RequestHandler {
+    private static final Logger log = Logger.getLogger(LocalDevice.class.getName());
     public static final int DEFAULT_PORT = 0xBAC0; // == 47808
     private static final int VENDOR_ID = 236; // Serotonin Software
     private static ExceptionListener exceptionListener = new DefaultExceptionListener();
@@ -908,6 +911,7 @@ public class LocalDevice implements RequestHandler {
     }
 
     public PropertyValues readProperties(RemoteDevice d, PropertyReferences refs) throws BACnetException {
+        long start = System.currentTimeMillis();
         Map<ObjectIdentifier, List<PropertyReference>> properties;
         PropertyValues propertyValues = new PropertyValues();
 
@@ -981,7 +985,8 @@ public class LocalDevice implements RequestHandler {
         else
             // If it doesn't support read property multiple, send them one at a time.
             sendOneAtATime(d, refs, propertyValues);
-
+        long finish = System.currentTimeMillis();
+        log.info("exiting readProperties after "+(finish-start)+"millis for remote device "+d.getInstanceNumber());
         return propertyValues;
     }
 
