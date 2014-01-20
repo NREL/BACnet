@@ -130,8 +130,9 @@ public class PropertiesReader {
 	}
 	
 	public static String formTableName(String deviceId, ObjectIdentifier oid) {
-		String type = oid.getObjectType()+"";
-		String objectType = type.replaceAll("\\s","");
+		String objectType = oid.getObjectType()+"";
+		objectType = objectType.replace(" ","");
+		objectType = objectType.replace("-","");
 		String objectId = ""+oid.getInstanceNumber();
 		String tableName = deviceId+objectType+objectId;
 		return tableName;
