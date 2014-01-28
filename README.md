@@ -1,15 +1,9 @@
 BACnet Scraper
 ===============
 
-This application is designed to scan all devices on a BACnet system (http://www.bacnet.org/) to allow for data scraping from the devices. 
-
-The system pulls down all the system metadata by running "discovery" once a week.  After the discovery, the system does point-by-point pulling of data of each device based on a filter file.
+This library provides scanning and data scraping functionality for devices on a [BACnet](http://www.bacnet.org/) network.  It provides standalone functionality but is intended to work with the [Stateful BACnet Scraper](https://github.com/nrel/bacnet-state) application to provide modular and stateful discovery and scraping functionality.
 
 Project funded by NREL's Commercial Building LDRD Project for Building Agent.
-
--------------------------------
-
-BACnet Scraper requires a recent version of JRuby. The logic and BACnet portions of the project are written in Java while the front end is developed in Ruby, for flexibility.
 
 Compiling
 ---------
@@ -21,42 +15,11 @@ git clone https://github.com/NREL/BACnet.git
 cd BACnet
 gradle build
 ```
-
-This will compile the BACnet Scraper and prepare some example files for execution. 
-
-Execution
+Options
 ---------
+The -dev option is required.  If the -databus option is not set to false, databus configuration (-k,-u,-U,-p) must be provided.  
 
-A jruby script, run.rb, is staged for execution (note this file is overwritten each time you compile). The script gives examples for logging, data storage and retrieval, and use of Sinatra to provide a web interface to the BACnet process.
-
-To run the application as a scraper do the following:
-
-```sh
-cd build/bacnet/bin
-bundle exec jruby run.rb -dev en0 -s -i 65010 -vv -f ../conf/example_filter.json
-```
-
-To run the application as a slave device do the following:
-
-```sh
-cd build/bacnet/bin
-bundle exec jruby run.rb -dev en0 -S -vv -F ../conf/example_oid.json -i 65010
-```
-
-To run both the application as a scraper and a slave device do the following:
-
-```sh
-cd build/bacnet/bin
-bundle exec jruby run.rb -dev en0 -s -i 65010 -vv -f ../conf/example_filter.json -S -F ../conf/example_oid.json
-```
-
-For more options use --help
-
-```sh
-cd build/bacnet/bin
-bundle exec jruby run.rb --help
-
-
+````
 usage: Syntax: [-D <arg>] [-d <arg>] [-databus <arg>] [-f <arg>] [-F                              
        <arg>] [-i <arg>] [-k <arg>] [-l <arg>] [-M <arg>] [-m <arg>] [-p                          
        <arg>] [-s] [-S] [-T <arg>] [-t <arg>] [-U <arg>] [-u <arg>] [-v]                          
@@ -69,17 +32,17 @@ usage: Syntax: [-D <arg>] [-d <arg>] [-databus <arg>] [-f <arg>] [-F
                                       true                                                        
  -f,--filter-file <arg>               JSON filter file to use during                              
                                       scanning, default:                                          
-                                      ../conf/example_filter.json
+                                      config/filter.json
  -F,--oid-file <arg>                  JSON oid file to use for the slave
                                       device configuration, default:
-                                      ../conf/example_oid.json
+                                      config/example_oid.json
  -i,--id <arg>                        Device ID of this software, default:
                                       11234
  -k,--databus-key <arg>               Key for sending to Databus, default:
                                       941RCGC.B2.1WWXM5WZVA5YL
  -l,--logging-properties-file <arg>   File for loading logger
                                       configuration, default:
-                                      ../conf/logging.properties
+                                      config/logging.properties
  -M,--max-device-id <arg>             Maximum device ID to scan for,
                                       default: -1
  -m,--min-device-id <arg>             Minimum device ID to scan for,
@@ -105,7 +68,7 @@ usage: Syntax: [-D <arg>] [-d <arg>] [-databus <arg>] [-f <arg>] [-F
  -vv,--very-verbose                   Very verbose logging (All Levels).
                                       Default is warning and error
                                       logging. default: false
-```
+````
 
 Slave Device
 ------------
