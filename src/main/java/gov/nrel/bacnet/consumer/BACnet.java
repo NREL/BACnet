@@ -327,8 +327,8 @@ public class BACnet {
 		String devname = "eth0";
 
 
-		String filterFile = "conf/example_filter.json";
-		String slaveDeviceConfigFile = "conf/example_oid.json";
+		String filterFile = "config/filter.json";
+		String slaveDeviceConfigFile = "config/example_oid.json";
 
 		int slaveDeviceUpdateInterval = 10;
 
@@ -336,7 +336,7 @@ public class BACnet {
 
 		boolean scan = true;
 		boolean slaveDeviceEnabled = false;
-		String loggingPropertiesFile = "../conf/logging.properties";
+		String loggingPropertiesFile = "config/logging.properties";
 
 		boolean verboseLogging = false;
 		boolean veryVerboseLogging = false;
