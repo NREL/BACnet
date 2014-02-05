@@ -1,9 +1,13 @@
-BACnet Scraper
+Building Agent BACnet Scraper
 ===============
 
 This library provides scanning and data scraping functionality for devices on a [BACnet](http://www.bacnet.org/) network.  It provides standalone functionality but is intended to work with the [Stateful BACnet Scraper](https://github.com/nrel/bacnet-state) application to provide modular and stateful discovery and scraping functionality.
 
-Project funded by NREL's Commercial Building LDRD Project for Building Agent.
+Project funded by NREL's Commercial Building LDRD Project for Building Agent.  Read more about Building Agent:
+
+* [NREL-Developed Software Tackles Building Efficiency and Offers Cost Savings](http://www.nrel.gov/news/press/2013/5301.html)
+* [Progress on Enabling an Interactive Conversation Between Commercial Building Occupants and Their Building To Improve Comfort and Energy Efficiency](http://www.nrel.gov/buildings/pdfs/55197.pdf)
+* [Building Agent Software: Occupancy Feedback for Building Controls](http://techportal.eere.energy.gov/technology.do/techID=1068)
 
 Compiling
 ---------
