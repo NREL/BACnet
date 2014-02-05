@@ -168,13 +168,28 @@ class DatabusSender {
 	}
 
 	public void postNewStream(Stream str, Device dev, String group, String id) {
-		if(!meta.addStream(str))
+		if(!meta.addStream(str)) 
 			return;
-		
+		// some tables were created with name Multstate... but added to meta with name "Multi-state..."
+		//for now we just fake that the names are identical
+		String old_name = str.getTableName();
+		String tmp_name = old_name.replace("Multistate","Multi-state");
+		if (tmp_name != str.getTableName()) {
+			str.setTableName(tmp_name);
+			if (!meta.addStream(str))
+				return;
+			str.setTableName(old_name);
+		}
+
 		log.info(id+"posting new stream="+str.getTableName());
 		postNewDevice(id, dev);
-		
-		long reg = registerNewStream(str.getTableName(), group);
+		long reg = -1;
+		try {
+			reg = registerNewStream(str.getTableName(), group);
+		}
+		catch (Exception e) {
+			log.log(Level.WARNING,"failed to post new stream",e);
+		}
 		
 		Map<String, String> result = new HashMap<String, String>();
 		result.put("_tableName", streamTable);
