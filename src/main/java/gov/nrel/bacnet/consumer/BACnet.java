@@ -18,8 +18,6 @@
 package gov.nrel.bacnet.consumer;
 
 import gov.nrel.bacnet.Config;
-import gov.nrel.bacnet.consumer.beans.JsonAllFilters;
-import gov.nrel.bacnet.consumer.beans.JsonObjectData;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -66,7 +64,6 @@ public class BACnet {
 	private DatabusDataWriter writer;
 	private Config config;
 	private LocalDevice localDevice;
-	private JsonAllFilters filters;
 	private LogHandler logHandler;
 	private BACnetDatabase database;
 	private TaskTracker tracker;
@@ -76,7 +73,6 @@ public class BACnet {
 		config = t_config;
 		tracker = new TaskTracker();
 		localDevice = null;
-		filters = null;
 		logHandler = null;
 
 		try {
@@ -145,18 +141,6 @@ public class BACnet {
 	public LocalDevice getLocalDevice()
 	{
 		return localDevice;
-	}
-
-
-	public JsonAllFilters getFilters()
-	{
-		return filters;
-	}
-
-	public JsonAllFilters parseFilters(String filters)
-	{
-		com.google.gson.Gson gson = new com.google.gson.Gson();
-		return gson.fromJson(filters, JsonAllFilters.class);
 	}
 
 	public Collection<BACnetDataWriter> getDefaultWriters()
@@ -238,25 +222,7 @@ public class BACnet {
 			slaveDeviceTimer.schedule(new gov.nrel.bacnet.SlaveDevice(localDevice, config), 1000, config.getSlaveDeviceUpdateInterval() * 1000);
 		}
 
-		String file = config.getFilterFileName();
-		String filterfile = readFile(file, Charset.forName("US-ASCII"));
-
-		logger.info("using filter file:" + file);
-		filters = parseFilters(filterfile);
-
 		int counter = 0;
-		for(JsonObjectData d : filters.getFilters()) {
-			if(d.getInterval() == 0) {
-				throw new IllegalArgumentException("Filter cannot have interval value of 0 or null.  It must be less than 0 to disable and greater than 0 to enable in seconds");
-		        } else if(d.getInterval() > 0 && d.getInterval() < 15) {
-				throw new IllegalArgumentException("Scan interval cannot be less than 15 seconds");
-			}
-
-			logger.info("filter"+counter+"="+d.getInterval()+" devId="+d.getDeviceId()+" objId="+d.getObjectId()+" objType="+d.getObjectType());
-			
-			//initialize regular expression matchers...
-			d.init();
-		}
 		
 		String streamTable = config.getDatabusStreamTable();
 		String deviceTable = config.getDatabusDeviceTable();
