@@ -279,7 +279,7 @@ public class BACnet {
 		int scanInterval = 168;
 		int broadcastInterval = 1;
 		int range = 100;
-		int numThreads = 10;
+		int numThreads = java.lang.Runtime.getRuntime().availableProcessors() + 1;
 
 		String databusStreamTable = "bacnetstreamMeta";
 		String databusDeviceTable = "bacnetdeviceMeta";
@@ -351,6 +351,7 @@ public class BACnet {
 		options.addOption("l", "logging-properties-file", true,
 				"File for loading logger configuration, default: " + loggingPropertiesFile);
 		options.addOption("databus", "databus-enabled", true, "Enable writing to databus. default: " + databusEnabled);
+		options.addOption("h", "threads", true, "Number of threads to use during processing. default: " + numThreads);
 
 		try {
 			CommandLine line = parser.parse(options, args);
@@ -444,6 +445,10 @@ public class BACnet {
 
 			if (line.hasOption("databus-enabled")) {
 				databusEnabled = Boolean.parseBoolean(line.getOptionValue("databus-enabled"));
+			}
+
+			if (line.hasOption("h")) {
+				numThreads = Integer.parseInt(line.getOptionValue("h"));
 			}
 
 		} catch (Exception e) {
