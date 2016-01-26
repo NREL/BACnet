@@ -223,9 +223,6 @@ public class BACnet {
 		}
 
 		int counter = 0;
-		
-		String streamTable = config.getDatabusStreamTable();
-		String deviceTable = config.getDatabusDeviceTable();
 
 		String username = config.getDatabusUserName();
 		String key = config.getDatabusKey();
@@ -236,7 +233,7 @@ public class BACnet {
 
 		if (config.getDatabusEnabled())
 		{
-			sender = new DatabusSender(username, key, deviceTable, streamTable, execSvc, config.getDatabusUrl(), config.getDatabusPort(), true);
+			sender = new DatabusSender(username, key, execSvc, config.getDatabusUrl(), config.getDatabusPort(), true);
 		}
 		logger.info("databus sender: "+sender);
 		writer = new DatabusDataWriter(new DataPointWriter(sender));

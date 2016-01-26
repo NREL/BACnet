@@ -48,7 +48,13 @@ import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.HttpHost;
+import org.apache.http.client.AuthCache;
+import org.apache.http.auth.AuthScope;
 import org.apache.http.conn.scheme.Scheme;
+import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.client.BasicAuthCache;
+import org.apache.http.client.protocol.ClientContext;
 import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.conn.ssl.X509HostnameVerifier;
@@ -59,6 +65,7 @@ import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.util.EntityUtils;
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -77,9 +84,6 @@ class DatabusSender {
 
 	private DefaultHttpClient httpclient;
 	private ObjectMapper mapper = new ObjectMapper();
-	private String deviceTable;
-	private String streamTable;
-	private MetaLoader meta = new MetaLoader();
 
 	private int counter = 0;
 	private double maxAve = 0;
@@ -88,29 +92,38 @@ class DatabusSender {
 	private Long initialStart;
 
 	private String hostUrl;
-
+	private String host;
 	private int port;
+	private String mode;
+	private String username;
+	private String key;
+
 	
-	public DatabusSender(String username, String key, String deviceTable, String streamTable, ExecutorService recorderSvc, String host, int port, boolean isSecure) {
-		log.info("username="+username+" key="+key+" deviceTable="+deviceTable+" str="+streamTable+" port="+port);
+	public DatabusSender(String username, String key, ExecutorService recorderSvc, String host, int port, boolean isSecure) {
+		log.info("username=" + username + " key=" + key + " port=" + port);
 		this.port = port;
-		this.deviceTable = deviceTable;
-		this.streamTable = streamTable;
+
 		PoolingClientConnectionManager mgr = new PoolingClientConnectionManager();
 		mgr.setDefaultMaxPerRoute(30);
 		mgr.setMaxTotal(30);
+		this.username = username;
+		this.key = key;
+		this.host = host;
+		this.port = port;
+		this.mode = "https";
+
+		if(!isSecure)
+			mode = "http";
+		this.hostUrl = mode+"://"+host+":"+port;
 		if (isSecure) {
-			this.hostUrl = "https://"+host+":"+port;
 			httpclient = createSecureOne(mgr);
 		} else {
-			this.hostUrl = "http://"+host+":"+port;
 			httpclient = new DefaultHttpClient(mgr);
 		}
 		HttpParams params = httpclient.getParams();
 		HttpConnectionParams.setConnectionTimeout(params, 60000);
 		HttpConnectionParams.setSoTimeout(params, 60000);
 		log.info("hostUrl="+hostUrl);
-		meta.initialize(username, key, host, port, isSecure, httpclient, deviceTable, streamTable, recorderSvc);
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -168,70 +181,15 @@ class DatabusSender {
 	}
 
 	public void postNewStream(Stream str, Device dev, String group, String id) {
-		if(!meta.addStream(str)) 
-			return;
-		// some tables were created with name Multstate... but added to meta with name "Multi-state..."
-		//for now we just fake that the names are identical
-		String old_name = str.getTableName();
-		String tmp_name = old_name.replace("Multistate","Multi-state");
-		if (tmp_name != str.getTableName()) {
-			str.setTableName(tmp_name);
-			if (!meta.addStream(str))
-				return;
-			str.setTableName(old_name);
-		}
-
 		log.info(id+"posting new stream="+str.getTableName());
-		postNewDevice(id, dev);
 		long reg = -1;
 		try {
-			reg = registerNewStream(str.getTableName(), group);
+			String json = createJsonForRequest(str.getTableName(), group);
+			reg = post("/api/registerV1", json);
 		}
 		catch (Exception e) {
 			log.log(Level.WARNING,"failed to post new stream",e);
 		}
-		
-		Map<String, String> result = new HashMap<String, String>();
-		result.put("_tableName", streamTable);
-		result.put("units", str.getUnits());
-		result.put("virtual", str.getVirtual());
-		result.put("aggregationInterval", str.getAggInterval());
-		result.put("aggregationType", str.getAggType());
-		result.put("processed", str.getProcessed());
-		result.put("description", str.getStreamDescription());
-		result.put("device", str.getDevice());
-		result.put("stream", str.getTableName());
-		String json = writeValueAsString(result);
-		
-		long post2 = post("/api/postdataV1", json);
-		log.info(id+"registered time="+reg+" and posted time="+post2+" stream="+str.getTableName());
-	}
-	
-	private long registerNewStream(String tableName, String group) {
-		String json = createJsonForRequest(tableName, group);
-		return post("/api/registerV1", json);
-	}
-
-	private synchronized void postNewDevice(String id, Device d) {
-		if(!meta.addDevice(d))
-			return;
-		
-		log.info(id+"posting new device="+d.getDeviceId());
-		
-		Map<String, String> result = new HashMap<String, String>();
-		result.put("_tableName", deviceTable);
-		result.put("owner", d.getOwner());
-		result.put("site", d.getSite());
-		result.put("building", d.getBldg());
-		result.put("endUse", d.getEndUse());
-		result.put("protocol", d.getProtocol());
-		result.put("description", d.getDeviceDescription());
-		result.put("id", d.getDeviceId());
-		result.put("address", d.getAddress());
-		String json = writeValueAsString(result);
-
-		long total = post("/api/postdataV1", json);
-		log.info(id+"device="+d.getDeviceId()+" posted time="+total);
 	}
 
 	private String writeValueAsString(Object obj) {
@@ -255,7 +213,8 @@ class DatabusSender {
 			httpPost.setHeader("Content-Type", "application/json");
 			httpPost.setEntity(new StringEntity(json));
 			long t1 = System.currentTimeMillis();
-			BasicHttpContext ctx = meta.setupPreEmptiveBasicAuth(httpclient);
+			this.setupPreEmptiveBasicAuth(httpclient);
+			BasicHttpContext ctx = setupPreEmptiveBasicAuth(httpclient);
 			HttpResponse response2 = httpclient.execute(httpPost, ctx);
 			long t2 = System.currentTimeMillis();
 			
@@ -280,6 +239,24 @@ class DatabusSender {
 		}
 	}
 	
+	BasicHttpContext setupPreEmptiveBasicAuth(DefaultHttpClient httpclient) {
+		HttpHost targetHost = new HttpHost(host, port, mode); 
+		httpclient.getCredentialsProvider().setCredentials(
+		        new AuthScope(targetHost.getHostName(), targetHost.getPort()), 
+		        new UsernamePasswordCredentials(username, key));
+
+		// Create AuthCache instance
+		AuthCache authCache = new BasicAuthCache();
+		// Generate BASIC scheme object and add it to the local auth cache
+		BasicScheme basicAuth = new BasicScheme();
+		authCache.put(targetHost, basicAuth);
+
+		// Add AuthCache to the execution context
+		BasicHttpContext localcontext = new BasicHttpContext();
+		localcontext.setAttribute(ClientContext.AUTH_CACHE, authCache);
+		return localcontext;
+	}
+
 	private String createJsonForRequest(String tableName, String group) {
 		// {"datasetType":"STREAM",
 		// "modelName":"timeSeriesForPinkBlobZ",
